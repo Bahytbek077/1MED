@@ -23,7 +23,7 @@ export default function Auth() {
     if (user) {
       setLocation(`/${user.role}/dashboard`);
     } else {
-      alert("User not found. Try: doctor@1med.com, patient@gmail.com, or admin@1med.com");
+      alert("Пользователь не найден. Попробуйте: doctor@1med.com, patient@gmail.com, или admin@1med.com");
     }
   };
 
@@ -44,14 +44,14 @@ export default function Auth() {
           </div>
           <div>
             <CardTitle className="text-2xl font-bold font-heading text-primary">1MED</CardTitle>
-            <CardDescription className="text-base">Your Personal Health Journey</CardDescription>
+            <CardDescription className="text-base">Ваш персональный медицинский путь</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+              <TabsTrigger value="login">Вход</TabsTrigger>
+              <TabsTrigger value="register">Регистрация</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">
@@ -68,13 +68,13 @@ export default function Auth() {
                     className="bg-white/50"
                   />
                 </div>
-                <Button type="submit" className="w-full text-lg h-11">Sign In</Button>
+                <Button type="submit" className="w-full text-lg h-11">Войти</Button>
                 
                 <div className="pt-4 text-xs text-center text-muted-foreground space-y-1 bg-muted/50 p-2 rounded border">
-                  <p className="font-semibold">Demo Credentials:</p>
-                  <p>Patient: <span className="font-mono text-primary">patient@gmail.com</span></p>
-                  <p>Doctor: <span className="font-mono text-primary">doctor@1med.com</span></p>
-                  <p>Admin: <span className="font-mono text-primary">admin@1med.com</span></p>
+                  <p className="font-semibold">Демо доступы:</p>
+                  <p>Пациент: <span className="font-mono text-primary">patient@gmail.com</span></p>
+                  <p>Врач: <span className="font-mono text-primary">doctor@1med.com</span></p>
+                  <p>Админ: <span className="font-mono text-primary">admin@1med.com</span></p>
                 </div>
               </form>
             </TabsContent>
@@ -82,10 +82,10 @@ export default function Auth() {
             <TabsContent value="register">
               <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name">ФИО</Label>
                   <Input 
                     id="name" 
-                    placeholder="John Doe" 
+                    placeholder="Иванов Иван Иванович" 
                     required 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -104,7 +104,7 @@ export default function Auth() {
                     className="bg-white/50"
                   />
                 </div>
-                <Button type="submit" className="w-full text-lg h-11">Create Account</Button>
+                <Button type="submit" className="w-full text-lg h-11">Создать аккаунт</Button>
               </form>
             </TabsContent>
           </Tabs>

@@ -37,8 +37,8 @@ export default function PatientDashboard() {
       <Layout>
         <div className="space-y-6">
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold text-primary">Choose Your Care Plan</h1>
-            <p className="text-muted-foreground">Select a subscription to start your health journey</p>
+            <h1 className="text-3xl font-bold text-primary">Выберите ваш тариф</h1>
+            <p className="text-muted-foreground">Выберите подписку, чтобы начать заботиться о здоровье</p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-6">
@@ -47,7 +47,7 @@ export default function PatientDashboard() {
                 <CardHeader>
                   <CardTitle className="text-2xl text-primary">{plan.name}</CardTitle>
                   <CardDescription className="text-lg font-semibold mt-2">
-                    ${(plan.price / 100).toFixed(2)} / year
+                    {plan.price} ₽ / год
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 flex-1">
@@ -63,7 +63,7 @@ export default function PatientDashboard() {
                 </CardContent>
                 <CardFooter>
                   <Button className="w-full" size="lg" onClick={() => handleSubscribe(plan.id)}>
-                    Get Started
+                    Выбрать
                   </Button>
                 </CardFooter>
               </Card>
@@ -74,6 +74,24 @@ export default function PatientDashboard() {
     );
   }
 
+  const getStatusLabel = (status: string) => {
+    switch(status) {
+      case 'active': return 'Активна';
+      case 'pending': return 'Ожидает';
+      case 'inactive': return 'Неактивна';
+      default: return status;
+    }
+  };
+
+  const getStepTypeLabel = (type: string) => {
+    switch(type) {
+      case 'consultation': return 'Консультация';
+      case 'test': return 'Анализ';
+      case 'specialist': return 'Специалист';
+      default: return type;
+    }
+  };
+
   return (
     <Layout>
       <div className="grid lg:grid-cols-3 gap-8">
@@ -81,11 +99,11 @@ export default function PatientDashboard() {
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-primary">Your Health Journey</h1>
-              <p className="text-muted-foreground">Plan: {myPlan?.name}</p>
+              <h1 className="text-2xl font-bold text-primary">Ваш маршрут здоровья</h1>
+              <p className="text-muted-foreground">Тариф: {myPlan?.name}</p>
             </div>
             <Badge variant={mySub.status === 'active' ? 'default' : 'secondary'} className="text-base px-4 py-1">
-              {mySub.status}
+              {getStatusLabel(mySub.status)}
             </Badge>
           </div>
 
@@ -109,11 +127,11 @@ export default function PatientDashboard() {
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start mb-1">
                           <h3 className="font-semibold text-lg">{step.title}</h3>
-                          {step.date && <Badge variant="outline" className="flex gap-1"><Clock className="h-3 w-3" /> {new Date(step.date).toLocaleDateString()}</Badge>}
+                          {step.date && <Badge variant="outline" className="flex gap-1"><Clock className="h-3 w-3" /> {new Date(step.date).toLocaleDateString('ru-RU')}</Badge>}
                         </div>
                         <p className="text-sm text-muted-foreground">{step.description}</p>
                         <div className="mt-3 flex gap-2">
-                          <Badge variant="secondary" className="capitalize">{step.type}</Badge>
+                          <Badge variant="secondary" className="capitalize">{getStepTypeLabel(step.type)}</Badge>
                         </div>
                       </CardContent>
                     </Card>
@@ -130,7 +148,7 @@ export default function PatientDashboard() {
             <CardHeader className="bg-primary/5 pb-4">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <MessageSquare className="h-5 w-5 text-primary" />
-                Chat with Dr. House
+                Чат с врачом
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 p-0">
@@ -138,7 +156,7 @@ export default function PatientDashboard() {
                 <div className="space-y-4">
                   {myMessages.length === 0 && (
                     <div className="text-center text-muted-foreground py-10 text-sm">
-                      No messages yet. Start a conversation!
+                      Нет сообщений. Начните диалог!
                     </div>
                   )}
                   {myMessages.map(msg => (
@@ -155,7 +173,7 @@ export default function PatientDashboard() {
                         {msg.content}
                       </div>
                       <span className="text-[10px] text-muted-foreground mt-1">
-                        {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        {new Date(msg.timestamp).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'})}
                       </span>
                     </div>
                   ))}
@@ -165,7 +183,7 @@ export default function PatientDashboard() {
             <CardFooter className="p-3 bg-muted/20">
               <form onSubmit={handleSend} className="flex w-full gap-2">
                 <Input 
-                  placeholder="Ask a question..." 
+                  placeholder="Задайте вопрос..." 
                   value={msgInput} 
                   onChange={(e) => setMsgInput(e.target.value)}
                   className="bg-white"

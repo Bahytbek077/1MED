@@ -72,33 +72,33 @@ interface StoreState {
 
 // Seed Data
 const SEED_USERS: User[] = [
-  { id: '1', name: 'Dr. House', email: 'doctor@1med.com', role: 'doctor', avatar: 'https://i.pravatar.cc/150?u=doctor' },
-  { id: '2', name: 'Alice Patient', email: 'patient@gmail.com', role: 'patient', avatar: 'https://i.pravatar.cc/150?u=alice' },
-  { id: '3', name: 'Admin User', email: 'admin@1med.com', role: 'admin' },
-  { id: '4', name: 'Bob Patient', email: 'bob@gmail.com', role: 'patient', avatar: 'https://i.pravatar.cc/150?u=bob' },
+  { id: '1', name: 'Др. Хаус', email: 'doctor@1med.com', role: 'doctor', avatar: 'https://i.pravatar.cc/150?u=doctor' },
+  { id: '2', name: 'Алиса Петрова', email: 'patient@gmail.com', role: 'patient', avatar: 'https://i.pravatar.cc/150?u=alice' },
+  { id: '3', name: 'Администратор', email: 'admin@1med.com', role: 'admin' },
+  { id: '4', name: 'Борис Иванов', email: 'bob@gmail.com', role: 'patient', avatar: 'https://i.pravatar.cc/150?u=bob' },
 ];
 
 const SEED_PLANS: Plan[] = [
   { 
     id: 'basic', 
-    name: 'Basic Checkup', 
+    name: 'Базовый Чекап', 
     price: 2900, 
-    description: 'Essential health monitoring',
-    features: ['Therapist Consultation', 'General Blood Test', 'Follow-up Call']
+    description: 'Основной мониторинг здоровья',
+    features: ['Консультация терапевта', 'Общий анализ крови', 'Звонок по результатам']
   },
   { 
     id: 'standard', 
-    name: 'Full Health', 
+    name: 'Полное Здоровье', 
     price: 5900, 
-    description: 'Comprehensive analysis',
-    features: ['2 Therapist Consultations', 'Extended Blood Panel', 'Cardiologist Visit', 'Ultrasound']
+    description: 'Комплексный анализ организма',
+    features: ['2 консультации терапевта', 'Расширенная панель крови', 'Визит к кардиологу', 'УЗИ']
   },
   { 
     id: 'premium', 
-    name: 'Premium Care', 
+    name: 'Премиум Забота', 
     price: 12900, 
-    description: 'All-inclusive medical support',
-    features: ['Unlimited Chat', 'Full Body Checkup', 'Nutritionist', 'Personal Manager']
+    description: 'Всесторонняя медицинская поддержка',
+    features: ['Безлимитный чат', 'Полный чекап организма', 'Нутрициолог', 'Личный менеджер']
   },
 ];
 
@@ -110,17 +110,17 @@ const SEED_SUBSCRIPTIONS: Subscription[] = [
     status: 'active',
     startDate: '2024-05-01',
     route: [
-      { id: 's1', title: 'Initial Therapist Consultation', description: 'Review history and complaints', status: 'completed', type: 'consultation', date: '2024-05-02' },
-      { id: 's2', title: 'Complete Blood Count (CBC)', description: 'Fasting required', status: 'completed', type: 'test', date: '2024-05-05' },
-      { id: 's3', title: 'Cardiologist Appointment', description: 'Heart rhythm check', status: 'pending', type: 'specialist', date: '2024-05-10' },
-      { id: 's4', title: 'Final Review', description: 'Discuss results and plan', status: 'pending', type: 'consultation' },
+      { id: 's1', title: 'Первичная консультация терапевта', description: 'Сбор анамнеза и жалоб', status: 'completed', type: 'consultation', date: '2024-05-02' },
+      { id: 's2', title: 'Общий анализ крови (ОАК)', description: 'Сдается натощак', status: 'completed', type: 'test', date: '2024-05-05' },
+      { id: 's3', title: 'Прием кардиолога', description: 'Проверка сердечного ритма', status: 'pending', type: 'specialist', date: '2024-05-10' },
+      { id: 's4', title: 'Итоговая консультация', description: 'Обсуждение результатов и план лечения', status: 'pending', type: 'consultation' },
     ]
   }
 ];
 
 const SEED_MESSAGES: Message[] = [
-  { id: 'm1', fromId: '2', toId: '1', content: 'Hello Dr. House, when should I take the blood test?', timestamp: new Date(Date.now() - 86400000).toISOString() },
-  { id: 'm2', fromId: '1', toId: '2', content: 'Hi Alice, preferably in the morning before eating.', timestamp: new Date(Date.now() - 80000000).toISOString() },
+  { id: 'm1', fromId: '2', toId: '1', content: 'Здравствуйте, доктор Хаус. Когда лучше сдать кровь?', timestamp: new Date(Date.now() - 86400000).toISOString() },
+  { id: 'm2', fromId: '1', toId: '2', content: 'Добрый день, Алиса. Желательно утром натощак, до 10:00.', timestamp: new Date(Date.now() - 80000000).toISOString() },
 ];
 
 export const useStore = create<StoreState>()(
@@ -149,7 +149,7 @@ export const useStore = create<StoreState>()(
         const initialRoute: Step[] = plan?.features.map((f, i) => ({
           id: Math.random().toString(36).substr(2, 9),
           title: f,
-          description: 'Scheduled step',
+          description: 'Запланированный этап',
           status: 'pending',
           type: i === 0 ? 'consultation' : 'test' // simplified logic
         })) || [];

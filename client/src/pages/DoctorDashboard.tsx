@@ -32,8 +32,8 @@ export default function DoctorDashboard() {
   const patientUsers = users.filter(u => u.role === 'patient');
   const activeSubs = subscriptions.filter(s => s.status === 'active');
 
-  const getPatientName = (id: string) => users.find(u => u.id === id)?.name || 'Unknown';
-  const getPlanName = (id: string) => plans.find(p => p.id === id)?.name || 'Unknown';
+  const getPatientName = (id: string) => users.find(u => u.id === id)?.name || 'Неизвестно';
+  const getPlanName = (id: string) => plans.find(p => p.id === id)?.name || 'Неизвестно';
 
   const selectedSub = subscriptions.find(s => s.id === selectedSubId);
   const selectedPatient = users.find(u => u.id === selectedSub?.userId);
@@ -50,7 +50,7 @@ export default function DoctorDashboard() {
     if (!selectedSubId || !newStepTitle) return;
     addStep(selectedSubId, {
       title: newStepTitle,
-      description: 'Added by doctor',
+      description: 'Назначено врачом',
       type: newStepType as any
     });
     setNewStepTitle("");
@@ -63,6 +63,15 @@ export default function DoctorDashboard() {
     setMsgInput("");
   };
 
+  const getStepTypeLabel = (type: string) => {
+    switch(type) {
+      case 'consultation': return 'Консультация';
+      case 'test': return 'Анализ';
+      case 'specialist': return 'Специалист';
+      default: return type;
+    }
+  };
+
   return (
     <Layout>
       <div className="flex h-[calc(100vh-8rem)] gap-6">
@@ -71,7 +80,7 @@ export default function DoctorDashboard() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
-              My Patients
+              Мои Пациенты
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 p-0">
@@ -120,47 +129,47 @@ export default function DoctorDashboard() {
                     <h2 className="text-xl font-bold">{selectedPatient.name}</h2>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Badge variant="outline">{getPlanName(selectedSub.planId)}</Badge>
-                      <span>Started {new Date(selectedSub.startDate).toLocaleDateString()}</span>
+                      <span>Старт {new Date(selectedSub.startDate).toLocaleDateString('ru-RU')}</span>
                     </div>
                   </div>
                 </div>
                 <TabsList>
-                  <TabsTrigger value="route">Care Route</TabsTrigger>
-                  <TabsTrigger value="chat">Chat</TabsTrigger>
+                  <TabsTrigger value="route">Маршрут</TabsTrigger>
+                  <TabsTrigger value="chat">Чат</TabsTrigger>
                 </TabsList>
               </div>
 
               <TabsContent value="route" className="flex-1 mt-0 overflow-hidden">
                 <Card className="h-full flex flex-col border-none shadow-none bg-transparent">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-semibold text-lg">Medical Journey Steps</h3>
+                    <h3 className="font-semibold text-lg">Этапы лечения</h3>
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button size="sm"><Plus className="h-4 w-4 mr-2" /> Add Step</Button>
+                        <Button size="sm"><Plus className="h-4 w-4 mr-2" /> Добавить этап</Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>Add New Step</DialogTitle>
+                          <DialogTitle>Новый этап</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
                           <div className="space-y-2">
-                            <Label>Title</Label>
-                            <Input value={newStepTitle} onChange={e => setNewStepTitle(e.target.value)} placeholder="e.g. MRI Scan" />
+                            <Label>Название</Label>
+                            <Input value={newStepTitle} onChange={e => setNewStepTitle(e.target.value)} placeholder="Например: МРТ" />
                           </div>
                           <div className="space-y-2">
-                            <Label>Type</Label>
+                            <Label>Тип</Label>
                             <Select value={newStepType} onValueChange={setNewStepType}>
                               <SelectTrigger>
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="consultation">Consultation</SelectItem>
-                                <SelectItem value="test">Test/Analysis</SelectItem>
-                                <SelectItem value="specialist">Specialist</SelectItem>
+                                <SelectItem value="consultation">Консультация</SelectItem>
+                                <SelectItem value="test">Анализ</SelectItem>
+                                <SelectItem value="specialist">Специалист</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
-                          <Button onClick={handleAddStep} className="w-full">Add Step</Button>
+                          <Button onClick={handleAddStep} className="w-full">Добавить</Button>
                         </div>
                       </DialogContent>
                     </Dialog>
@@ -183,7 +192,7 @@ export default function DoctorDashboard() {
                               <h4 className={cn("font-medium", step.status === 'completed' && "line-through text-muted-foreground")}>
                                 {step.title}
                               </h4>
-                              <Badge variant="secondary" className="text-[10px] h-5">{step.type}</Badge>
+                              <Badge variant="secondary" className="text-[10px] h-5">{getStepTypeLabel(step.type)}</Badge>
                             </div>
                             <p className="text-sm text-muted-foreground">{step.description}</p>
                           </div>
@@ -215,7 +224,7 @@ export default function DoctorDashboard() {
                             {msg.content}
                           </div>
                           <span className="text-[10px] text-muted-foreground mt-1">
-                            {new Date(msg.timestamp).toLocaleTimeString()}
+                            {new Date(msg.timestamp).toLocaleTimeString('ru-RU')}
                           </span>
                         </div>
                       ))}
@@ -223,8 +232,8 @@ export default function DoctorDashboard() {
                   </ScrollArea>
                   <div className="p-3 border-t">
                     <form onSubmit={handleSendMsg} className="flex gap-2">
-                      <Input value={msgInput} onChange={e => setMsgInput(e.target.value)} placeholder="Reply to patient..." />
-                      <Button type="submit">Send</Button>
+                      <Input value={msgInput} onChange={e => setMsgInput(e.target.value)} placeholder="Ответить пациенту..." />
+                      <Button type="submit">Отправить</Button>
                     </form>
                   </div>
                 </Card>
@@ -234,7 +243,7 @@ export default function DoctorDashboard() {
             <div className="h-full flex items-center justify-center text-muted-foreground bg-muted/10 rounded-lg border border-dashed">
               <div className="text-center">
                 <Users className="h-10 w-10 mx-auto mb-2 opacity-20" />
-                <p>Select a patient to view details</p>
+                <p>Выберите пациента для просмотра</p>
               </div>
             </div>
           )}

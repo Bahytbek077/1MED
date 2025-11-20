@@ -35,19 +35,19 @@ export default function Layout({ children }: LayoutProps) {
     switch (role) {
       case 'patient':
         return [
-          { icon: Activity, label: "My Journey", path: "/patient/dashboard" },
-          { icon: MessageSquare, label: "Chat with Doctor", path: "/patient/chat" },
+          { icon: Activity, label: "Мой Маршрут", path: "/patient/dashboard" },
+          { icon: MessageSquare, label: "Чат с врачом", path: "/patient/chat" },
         ];
       case 'doctor':
         return [
-          { icon: Users, label: "Patients", path: "/doctor/dashboard" },
-          { icon: MessageSquare, label: "Messages", path: "/doctor/messages" },
+          { icon: Users, label: "Пациенты", path: "/doctor/dashboard" },
+          { icon: MessageSquare, label: "Сообщения", path: "/doctor/messages" },
         ];
       case 'admin':
         return [
-          { icon: LayoutDashboard, label: "Overview", path: "/admin/dashboard" },
-          { icon: FileText, label: "Plans", path: "/admin/plans" },
-          { icon: Users, label: "Users", path: "/admin/users" },
+          { icon: LayoutDashboard, label: "Обзор", path: "/admin/dashboard" },
+          { icon: FileText, label: "Тарифы", path: "/admin/plans" },
+          { icon: Users, label: "Пользователи", path: "/admin/users" },
         ];
       default:
         return [];
@@ -92,12 +92,15 @@ export default function Layout({ children }: LayoutProps) {
             </div>
             <div className="flex-1 overflow-hidden">
               <p className="text-sm font-medium truncate">{currentUser.name}</p>
-              <p className="text-xs text-muted-foreground capitalize">{currentUser.role}</p>
+              <p className="text-xs text-muted-foreground capitalize">
+                {currentUser.role === 'patient' ? 'Пациент' : 
+                 currentUser.role === 'doctor' ? 'Врач' : 'Админ'}
+              </p>
             </div>
           </div>
           <Button variant="outline" className="w-full justify-start text-muted-foreground" onClick={handleLogout}>
             <LogOut className="h-4 w-4 mr-2" />
-            Log out
+            Выйти
           </Button>
         </div>
       </aside>

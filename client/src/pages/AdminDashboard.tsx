@@ -30,38 +30,38 @@ export default function AdminDashboard() {
   return (
     <Layout>
       <div className="space-y-8">
-        <h1 className="text-3xl font-bold text-primary">Admin Overview</h1>
+        <h1 className="text-3xl font-bold text-primary">Панель Администратора</h1>
         
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">Общая выручка</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${(totalRevenue / 100).toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+              <div className="text-2xl font-bold">{totalRevenue.toLocaleString()} ₽</div>
+              <p className="text-xs text-muted-foreground">+20.1% к прошлому месяцу</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Active Patients</CardTitle>
+              <CardTitle className="text-sm font-medium">Активные пациенты</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{users.filter(u => u.role === 'patient').length}</div>
-              <p className="text-xs text-muted-foreground">+12 new this week</p>
+              <p className="text-xs text-muted-foreground">+12 новых на этой неделе</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Active Subscriptions</CardTitle>
+              <CardTitle className="text-sm font-medium">Активные подписки</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{subscriptions.filter(s => s.status === 'active').length}</div>
-              <p className="text-xs text-muted-foreground">98% retention rate</p>
+              <p className="text-xs text-muted-foreground">98% уровень удержания</p>
             </CardContent>
           </Card>
         </div>
@@ -69,13 +69,13 @@ export default function AdminDashboard() {
         {/* Subscriptions Management */}
         <Card>
           <CardHeader>
-            <CardTitle>Subscription Management</CardTitle>
-            <CardDescription>Manage patient access and statuses</CardDescription>
+            <CardTitle>Управление подписками</CardTitle>
+            <CardDescription>Управление доступом и статусами пациентов</CardDescription>
             <div className="pt-4">
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Search patients..." 
+                  placeholder="Поиск пациентов..." 
                   className="pl-8 max-w-sm"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -87,11 +87,11 @@ export default function AdminDashboard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Patient</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Пациент</TableHead>
+                  <TableHead>Тариф</TableHead>
+                  <TableHead>Статус</TableHead>
+                  <TableHead>Дата начала</TableHead>
+                  <TableHead className="text-right">Действия</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -104,13 +104,13 @@ export default function AdminDashboard() {
                     <TableCell>{item.plan?.name}</TableCell>
                     <TableCell>
                       <Badge variant={item.status === 'active' ? 'default' : 'secondary'}>
-                        {item.status}
+                        {item.status === 'active' ? 'Активна' : 'Неактивна'}
                       </Badge>
                     </TableCell>
-                    <TableCell>{new Date(item.startDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(item.startDate).toLocaleDateString('ru-RU')}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Active</span>
+                        <span className="text-xs text-muted-foreground">Доступ</span>
                         <Switch 
                           checked={item.status === 'active'} 
                           onCheckedChange={() => toggleSubscription(item.id)}
@@ -133,7 +133,7 @@ export default function AdminDashboard() {
                </CardHeader>
                <CardContent className="space-y-4">
                  <div className="space-y-2">
-                   <label className="text-sm font-medium">Price (cents)</label>
+                   <label className="text-sm font-medium">Цена (₽)</label>
                    <Input 
                       type="number" 
                       value={plan.price} 
@@ -141,7 +141,7 @@ export default function AdminDashboard() {
                    />
                  </div>
                  <div className="space-y-2">
-                   <label className="text-sm font-medium">Description</label>
+                   <label className="text-sm font-medium">Описание</label>
                    <Input 
                       value={plan.description} 
                       onChange={(e) => updatePlan(plan.id, { description: e.target.value })}
