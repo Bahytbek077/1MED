@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Stethoscope, User, Users, Shield, ArrowLeft, Lock } from "lucide-react";
 import generatedImage from "@assets/generated_images/clean_medical_abstract_background_with_soft_blue_gradients.png";
+import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 
 export default function Auth() {
@@ -64,11 +65,10 @@ export default function Auth() {
           <div className="absolute inset-0 bg-white/40 backdrop-blur-sm" />
           
           <div className="z-10 w-full max-w-4xl space-y-8">
-            <div className="text-center space-y-4">
-                <div className="mx-auto h-16 w-16 bg-primary rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20">
-                    <Stethoscope className="h-9 w-9 text-white" />
+            <div className="text-center space-y-4 flex flex-col items-center">
+                <div className="mb-4">
+                  <Logo size="lg" className="text-primary scale-125" />
                 </div>
-                <h1 className="text-4xl font-bold font-heading text-primary drop-shadow-sm">Добро пожаловать в 1MED</h1>
                 <p className="text-xl text-muted-foreground font-medium">Выберите вашу роль для входа</p>
             </div>
 
@@ -149,14 +149,10 @@ export default function Auth() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="text-center space-y-2 pt-2">
-            <div className="mx-auto h-12 w-12 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
-              {selectedRole === 'patient' && <User className="h-6 w-6 text-white" />}
-              {selectedRole === 'doctor' && <Stethoscope className="h-6 w-6 text-white" />}
-              {selectedRole === 'admin' && <Shield className="h-6 w-6 text-white" />}
-            </div>
+          <div className="text-center space-y-2 pt-2 flex flex-col items-center">
+            <Logo size="md" className="text-primary" showSlogan={false} />
             <div>
-              <CardTitle className="text-2xl font-bold font-heading text-primary">
+              <CardTitle className="text-2xl font-bold font-heading text-primary mt-4">
                 {selectedRole === 'patient' && 'Вход для Пациента'}
                 {selectedRole === 'doctor' && 'Вход для Врача'}
                 {selectedRole === 'admin' && 'Вход для Админа'}

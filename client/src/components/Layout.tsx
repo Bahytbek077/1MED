@@ -12,6 +12,7 @@ import {
   FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/Logo";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -62,10 +63,7 @@ export default function Layout({ children }: LayoutProps) {
       <aside className="w-64 bg-white border-r border-sidebar-border fixed h-full hidden md:flex flex-col z-10">
         <div className="p-6 border-b border-sidebar-border">
           <div className="flex items-center gap-2 text-primary">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <Stethoscope className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight font-heading text-foreground">1MED</span>
+            <Logo size="sm" showSlogan={false} />
           </div>
         </div>
 
