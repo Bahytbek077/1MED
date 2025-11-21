@@ -9,7 +9,8 @@ import {
   LogOut, 
   Activity,
   MessageSquare,
-  FileText
+  FileText,
+  ListPlus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
@@ -48,6 +49,7 @@ export default function Layout({ children }: LayoutProps) {
         return [
           { icon: LayoutDashboard, label: "Обзор", path: "/admin/dashboard" },
           { icon: FileText, label: "Тарифы", path: "/admin/plans" },
+          { icon: ListPlus, label: "Услуги", path: "/admin/services" },
           { icon: Users, label: "Пользователи", path: "/admin/users" },
         ];
       default:

@@ -10,6 +10,7 @@ import DoctorDashboard from "@/pages/DoctorDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminUsers from "@/pages/AdminUsers";
 import AdminPlans from "@/pages/AdminPlans";
+import AdminServices from "@/pages/AdminServices";
 
 function Router() {
   return (
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/doctor/messages" component={DoctorDashboard} /> {/* Reuse for now */}
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/plans" component={AdminPlans} />
+      <Route path="/admin/services" component={AdminServices} />
       <Route path="/admin/users" component={AdminUsers} />
       <Route component={NotFound} />
     </Switch>

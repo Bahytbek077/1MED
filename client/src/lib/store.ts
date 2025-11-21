@@ -84,6 +84,11 @@ interface StoreState {
   // Admin Actions
   toggleSubscription: (subId: string) => void;
   updatePlan: (planId: string, data: Partial<Plan>) => void;
+
+  // Service Management
+  addService: (service: Omit<Service, 'id'>) => void;
+  updateService: (id: string, data: Partial<Service>) => void;
+  deleteService: (id: string) => void;
 }
 
 // Seed Data
@@ -280,6 +285,23 @@ export const useStore = create<StoreState>()(
 
       updatePlan: (planId, data) => set((state) => ({
         plans: state.plans.map(p => p.id === planId ? { ...p, ...data } : p)
+      })),
+
+      addService: (serviceData) => set((state) => ({
+        services: [...state.services, { ...serviceData, id: Math.random().toString(36).substr(2, 9) }]
+      })),
+
+      updateService: (id, data) => set((state) => ({
+        services: state.services.map(s => s.id === id ? { ...s, ...data } : s)
+      })),
+
+      deleteService: (id) => set((state) => ({
+        services: state.services.filter(s => s.id !== id),
+        // Optionally remove from plans too, but for now let's keep it simple or filter in UI
+        plans: state.plans.map(p => ({
+          ...p,
+          allowedServiceIds: p.allowedServiceIds.filter(sid => sid !== id)
+        }))
       })),
     }),
     {
