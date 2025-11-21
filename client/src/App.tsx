@@ -8,6 +8,7 @@ import Auth from "@/pages/Auth";
 import PatientDashboard from "@/pages/PatientDashboard";
 import DoctorDashboard from "@/pages/DoctorDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
+import AdminUsers from "@/pages/AdminUsers";
 
 function Router() {
   return (
@@ -19,7 +20,7 @@ function Router() {
       <Route path="/doctor/messages" component={DoctorDashboard} /> {/* Reuse for now */}
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/plans" component={AdminDashboard} /> {/* Reuse for now */}
-      <Route path="/admin/users" component={AdminDashboard} /> {/* Reuse for now */}
+      <Route path="/admin/users" component={AdminUsers} />
       <Route component={NotFound} />
     </Switch>
   );

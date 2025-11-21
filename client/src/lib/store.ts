@@ -7,6 +7,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  password?: string; // Made optional for backward compatibility but will be required
   role: Role;
   avatar?: string;
 }
@@ -52,10 +53,15 @@ interface StoreState {
   subscriptions: Subscription[];
   messages: Message[];
   
-  login: (email: string) => void;
+  login: (email: string, password?: string) => boolean;
   logout: () => void;
-  register: (name: string, email: string, role: Role) => void;
+  register: (name: string, email: string, password?: string, role?: Role) => void;
   
+  // User Management (Admin)
+  addUser: (user: Omit<User, 'id'>) => void;
+  updateUser: (id: string, data: Partial<User>) => void;
+  deleteUser: (id: string) => void;
+
   // Patient Actions
   subscribe: (userId: string, planId: string) => void;
   sendMessage: (fromId: string, toId: string, content: string) => void;
@@ -72,10 +78,10 @@ interface StoreState {
 
 // Seed Data
 const SEED_USERS: User[] = [
-  { id: '1', name: 'Др. Хаус', email: 'doctor@1med.com', role: 'doctor', avatar: 'https://i.pravatar.cc/150?u=doctor' },
-  { id: '2', name: 'Алиса Петрова', email: 'patient@gmail.com', role: 'patient', avatar: 'https://i.pravatar.cc/150?u=alice' },
-  { id: '3', name: 'Администратор', email: 'admin@1med.com', role: 'admin' },
-  { id: '4', name: 'Борис Иванов', email: 'bob@gmail.com', role: 'patient', avatar: 'https://i.pravatar.cc/150?u=bob' },
+  { id: '1', name: 'Др. Хаус', email: 'doctor@1med.com', password: '123', role: 'doctor', avatar: 'https://i.pravatar.cc/150?u=doctor' },
+  { id: '2', name: 'Алиса Петрова', email: 'patient@gmail.com', password: '123', role: 'patient', avatar: 'https://i.pravatar.cc/150?u=alice' },
+  { id: '3', name: 'Администратор', email: 'admin@1med.com', password: '123', role: 'admin' },
+  { id: '4', name: 'Борис Иванов', email: 'bob@gmail.com', password: '123', role: 'patient', avatar: 'https://i.pravatar.cc/150?u=bob' },
 ];
 
 const SEED_PLANS: Plan[] = [
@@ -125,24 +131,55 @@ const SEED_MESSAGES: Message[] = [
 
 export const useStore = create<StoreState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       currentUser: null,
       users: SEED_USERS,
       plans: SEED_PLANS,
       subscriptions: SEED_SUBSCRIPTIONS,
       messages: SEED_MESSAGES,
 
-      login: (email) => set((state) => {
+      login: (email, password) => {
+        const state = get();
         const user = state.users.find(u => u.email === email);
-        return { currentUser: user || null };
-      }),
+        
+        if (user && user.password === password) {
+          set({ currentUser: user });
+          return true;
+        }
+        return false;
+      },
 
       logout: () => set({ currentUser: null }),
 
-      register: (name, email, role) => set((state) => {
-        const newUser: User = { id: Math.random().toString(36).substr(2, 9), name, email, role };
+      register: (name, email, password, role = 'patient') => set((state) => {
+        const newUser: User = { 
+          id: Math.random().toString(36).substr(2, 9), 
+          name, 
+          email, 
+          password, 
+          role 
+        };
         return { users: [...state.users, newUser], currentUser: newUser };
       }),
+
+      addUser: (userData) => set((state) => {
+        const newUser: User = { 
+          ...userData,
+          id: Math.random().toString(36).substr(2, 9), 
+        };
+        return { users: [...state.users, newUser] };
+      }),
+
+      updateUser: (id, data) => set((state) => ({
+        users: state.users.map(u => u.id === id ? { ...u, ...data } : u),
+        // Also update current user if it's the same person
+        currentUser: state.currentUser?.id === id ? { ...state.currentUser, ...data } : state.currentUser
+      })),
+
+      deleteUser: (id) => set((state) => ({
+        users: state.users.filter(u => u.id !== id),
+        subscriptions: state.subscriptions.filter(s => s.userId !== id)
+      })),
 
       subscribe: (userId, planId) => set((state) => {
         const plan = state.plans.find(p => p.id === planId);
@@ -151,7 +188,7 @@ export const useStore = create<StoreState>()(
           title: f,
           description: 'Запланированный этап',
           status: 'pending',
-          type: i === 0 ? 'consultation' : 'test' // simplified logic
+          type: i === 0 ? 'consultation' : 'test'
         })) || [];
 
         const newSub: Subscription = {
@@ -209,7 +246,7 @@ export const useStore = create<StoreState>()(
       })),
     }),
     {
-      name: '1med-storage',
+      name: '1med-storage-v2', // Changed version to force reset for new schema
     }
   )
 );

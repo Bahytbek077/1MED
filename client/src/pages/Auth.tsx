@@ -6,30 +6,33 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Stethoscope, User, Users, Shield, ArrowLeft } from "lucide-react";
+import { Stethoscope, User, Users, Shield, ArrowLeft, Lock } from "lucide-react";
 import generatedImage from "@assets/generated_images/clean_medical_abstract_background_with_soft_blue_gradients.png";
 import { cn } from "@/lib/utils";
 
 export default function Auth() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const { login, register } = useStore();
   const [_, setLocation] = useLocation();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    login(email);
-    const user = useStore.getState().currentUser;
+    const success = login(email, password);
     
-    if (user) {
-      if (user.role !== selectedRole) {
-         alert(`Ошибка: Этот email привязан к роли "${user.role}", а вы пытаетесь войти как "${selectedRole}".`);
-         return;
+    if (success) {
+      const user = useStore.getState().currentUser;
+      if (user) {
+        if (user.role !== selectedRole) {
+           alert(`Ошибка: Этот аккаунт имеет роль "${user.role}", а вы пытаетесь войти как "${selectedRole}".`);
+           return;
+        }
+        setLocation(`/${user.role}/dashboard`);
       }
-      setLocation(`/${user.role}/dashboard`);
     } else {
-      alert("Пользователь не найден. Проверьте email.");
+      alert("Неверный email или пароль. (Демо пароль: 123)");
     }
   };
 
@@ -39,7 +42,11 @@ export default function Auth() {
         alert("Самостоятельная регистрация доступна только для пациентов.");
         return;
     }
-    register(name, email, "patient");
+    if (!password) {
+        alert("Введите пароль");
+        return;
+    }
+    register(name, email, password, "patient");
     setLocation("/patient/dashboard");
   };
 
@@ -69,7 +76,7 @@ export default function Auth() {
                 {/* Patient Card */}
                 <Card 
                     className="cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-xl border-2 hover:border-primary/50 group bg-white/80 backdrop-blur"
-                    onClick={() => { setSelectedRole('patient'); setEmail(getDemoEmail('patient')); }}
+                    onClick={() => { setSelectedRole('patient'); setEmail(getDemoEmail('patient')); setPassword('123'); }}
                 >
                     <CardHeader className="text-center space-y-4 pb-2">
                         <div className="mx-auto h-14 w-14 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors text-primary">
@@ -88,7 +95,7 @@ export default function Auth() {
                 {/* Doctor Card */}
                 <Card 
                     className="cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-xl border-2 hover:border-primary/50 group bg-white/80 backdrop-blur"
-                    onClick={() => { setSelectedRole('doctor'); setEmail(getDemoEmail('doctor')); }}
+                    onClick={() => { setSelectedRole('doctor'); setEmail(getDemoEmail('doctor')); setPassword('123'); }}
                 >
                     <CardHeader className="text-center space-y-4 pb-2">
                         <div className="mx-auto h-14 w-14 rounded-full bg-teal-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors text-primary">
@@ -107,7 +114,7 @@ export default function Auth() {
                 {/* Admin Card */}
                 <Card 
                     className="cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-xl border-2 hover:border-primary/50 group bg-white/80 backdrop-blur"
-                    onClick={() => { setSelectedRole('admin'); setEmail(getDemoEmail('admin')); }}
+                    onClick={() => { setSelectedRole('admin'); setEmail(getDemoEmail('admin')); setPassword('123'); }}
                 >
                     <CardHeader className="text-center space-y-4 pb-2">
                         <div className="mx-auto h-14 w-14 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors text-primary">
@@ -138,7 +145,7 @@ export default function Auth() {
             variant="ghost" 
             size="icon" 
             className="absolute left-4 top-4"
-            onClick={() => { setSelectedRole(null); setEmail(""); }}
+            onClick={() => { setSelectedRole(null); setEmail(""); setPassword(""); }}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -169,6 +176,8 @@ export default function Auth() {
                         <LoginForm 
                             email={email} 
                             setEmail={setEmail} 
+                            password={password}
+                            setPassword={setPassword}
                             handleLogin={handleLogin} 
                             role={selectedRole} 
                         />
@@ -199,6 +208,21 @@ export default function Auth() {
                                 className="bg-white/50"
                             />
                             </div>
+                            <div className="space-y-2">
+                            <Label htmlFor="reg-pass">Пароль</Label>
+                            <div className="relative">
+                                <Lock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                    id="reg-pass" 
+                                    placeholder="******" 
+                                    type="password" 
+                                    required 
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="bg-white/50 pl-8"
+                                />
+                            </div>
+                            </div>
                             <Button type="submit" className="w-full text-lg h-11">Создать аккаунт</Button>
                         </form>
                     </TabsContent>
@@ -207,6 +231,8 @@ export default function Auth() {
                 <LoginForm 
                     email={email} 
                     setEmail={setEmail} 
+                    password={password}
+                    setPassword={setPassword}
                     handleLogin={handleLogin} 
                     role={selectedRole} 
                 />
@@ -217,7 +243,14 @@ export default function Auth() {
   );
 }
 
-function LoginForm({ email, setEmail, handleLogin, role }: { email: string, setEmail: (s: string) => void, handleLogin: (e: React.FormEvent) => void, role: Role }) {
+function LoginForm({ email, setEmail, password, setPassword, handleLogin, role }: { 
+    email: string, 
+    setEmail: (s: string) => void, 
+    password: string,
+    setPassword: (s: string) => void,
+    handleLogin: (e: React.FormEvent) => void, 
+    role: Role 
+}) {
     return (
         <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
@@ -232,6 +265,21 @@ function LoginForm({ email, setEmail, handleLogin, role }: { email: string, setE
                 className="bg-white/50"
                 />
             </div>
+            <div className="space-y-2">
+                <Label htmlFor="password">Пароль</Label>
+                <div className="relative">
+                    <Lock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        id="password" 
+                        placeholder="******" 
+                        type="password" 
+                        required 
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="bg-white/50 pl-8"
+                    />
+                </div>
+            </div>
             <Button type="submit" className="w-full text-lg h-11">Войти</Button>
             
             <div className="pt-4 text-xs text-center text-muted-foreground space-y-1 bg-muted/50 p-2 rounded border">
@@ -241,6 +289,7 @@ function LoginForm({ email, setEmail, handleLogin, role }: { email: string, setE
                     {role === 'doctor' && 'doctor@1med.com'}
                     {role === 'admin' && 'admin@1med.com'}
                 </span></p>
+                <p>Пароль: <span className="font-mono text-primary">123</span></p>
             </div>
         </form>
     );
