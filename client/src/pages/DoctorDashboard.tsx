@@ -11,32 +11,31 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Users, 
-  Calendar, 
   CheckCircle2, 
   Plus, 
   Trash2, 
-  MoreVertical,
-  Clock,
-  MessageSquare
+  AlertCircle
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 export default function DoctorDashboard() {
-  const { users, subscriptions, plans, updateStepStatus, addStep, removeStep, messages, sendMessage, currentUser } = useStore();
+  const { users, subscriptions, plans, services, updateStepStatus, addStep, removeStep, messages, sendMessage, currentUser } = useStore();
   const [selectedSubId, setSelectedSubId] = useState<string | null>(null);
-  const [newStepTitle, setNewStepTitle] = useState("");
-  const [newStepType, setNewStepType] = useState("consultation");
+  const [selectedServiceId, setSelectedServiceId] = useState<string>("");
+  const [customTitle, setCustomTitle] = useState(""); // Fallback if needed, or for note
   const [msgInput, setMsgInput] = useState("");
 
-  const patientUsers = users.filter(u => u.role === 'patient');
   const activeSubs = subscriptions.filter(s => s.status === 'active');
 
-  const getPatientName = (id: string) => users.find(u => u.id === id)?.name || 'Неизвестно';
   const getPlanName = (id: string) => plans.find(p => p.id === id)?.name || 'Неизвестно';
 
   const selectedSub = subscriptions.find(s => s.id === selectedSubId);
   const selectedPatient = users.find(u => u.id === selectedSub?.userId);
+  const selectedPlan = plans.find(p => p.id === selectedSub?.planId);
+
+  // Available services for this patient based on plan
+  const availableServices = services.filter(svc => selectedPlan?.allowedServiceIds.includes(svc.id));
 
   // Messages for selected patient
   const patientMessages = selectedPatient 
@@ -47,13 +46,20 @@ export default function DoctorDashboard() {
     : [];
 
   const handleAddStep = () => {
-    if (!selectedSubId || !newStepTitle) return;
+    if (!selectedSubId || !selectedServiceId) return;
+    
+    const service = services.find(s => s.id === selectedServiceId);
+    if (!service) return;
+
     addStep(selectedSubId, {
-      title: newStepTitle,
-      description: 'Назначено врачом',
-      type: newStepType as any
+      title: service.name,
+      description: customTitle || 'Назначено врачом',
+      type: service.type,
+      serviceId: service.id
     });
-    setNewStepTitle("");
+    
+    setSelectedServiceId("");
+    setCustomTitle("");
   };
 
   const handleSendMsg = (e: React.FormEvent) => {
@@ -149,27 +155,46 @@ export default function DoctorDashboard() {
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>Новый этап</DialogTitle>
+                          <DialogTitle>Назначение услуги</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
-                          <div className="space-y-2">
-                            <Label>Название</Label>
-                            <Input value={newStepTitle} onChange={e => setNewStepTitle(e.target.value)} placeholder="Например: МРТ" />
+                          <div className="bg-muted/20 p-3 rounded-md flex gap-2 items-start text-sm">
+                            <AlertCircle className="h-4 w-4 text-primary mt-0.5" />
+                            <p>В списке доступны только услуги, включенные в тариф пациента <strong>"{selectedPlan?.name}"</strong>.</p>
                           </div>
+                          
                           <div className="space-y-2">
-                            <Label>Тип</Label>
-                            <Select value={newStepType} onValueChange={setNewStepType}>
+                            <Label>Выберите услугу</Label>
+                            <Select value={selectedServiceId} onValueChange={setSelectedServiceId}>
                               <SelectTrigger>
-                                <SelectValue />
+                                <SelectValue placeholder="Выберите услугу из тарифа" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="consultation">Консультация</SelectItem>
-                                <SelectItem value="test">Анализ</SelectItem>
-                                <SelectItem value="specialist">Специалист</SelectItem>
+                                {availableServices.length > 0 ? (
+                                  availableServices.map(svc => (
+                                    <SelectItem key={svc.id} value={svc.id}>
+                                      {svc.name} ({getStepTypeLabel(svc.type)})
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <div className="p-2 text-sm text-muted-foreground text-center">Нет доступных услуг</div>
+                                )}
                               </SelectContent>
                             </Select>
                           </div>
-                          <Button onClick={handleAddStep} className="w-full">Добавить</Button>
+                          
+                          <div className="space-y-2">
+                            <Label>Комментарий (необязательно)</Label>
+                            <Input 
+                                value={customTitle} 
+                                onChange={e => setCustomTitle(e.target.value)} 
+                                placeholder="Например: Утром натощак" 
+                            />
+                          </div>
+                          
+                          <Button onClick={handleAddStep} className="w-full" disabled={!selectedServiceId}>
+                            Назначить
+                          </Button>
                         </div>
                       </DialogContent>
                     </Dialog>

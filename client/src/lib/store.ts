@@ -2,14 +2,21 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export type Role = 'patient' | 'doctor' | 'admin';
+export type ServiceType = 'consultation' | 'test' | 'specialist';
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  password?: string; // Made optional for backward compatibility but will be required
+  password?: string;
   role: Role;
   avatar?: string;
+}
+
+export interface Service {
+  id: string;
+  name: string;
+  type: ServiceType;
 }
 
 export interface Plan {
@@ -17,7 +24,8 @@ export interface Plan {
   name: string;
   price: number;
   description: string;
-  features: string[];
+  features: string[]; // Marketing text
+  allowedServiceIds: string[]; // Logic restrictions
 }
 
 export interface Step {
@@ -26,7 +34,8 @@ export interface Step {
   description: string;
   status: 'pending' | 'completed';
   date?: string;
-  type: 'consultation' | 'test' | 'specialist';
+  type: ServiceType;
+  serviceId?: string; // Link to the specific service
 }
 
 export interface Subscription {
@@ -50,6 +59,7 @@ interface StoreState {
   currentUser: User | null;
   users: User[];
   plans: Plan[];
+  services: Service[];
   subscriptions: Subscription[];
   messages: Message[];
   
@@ -57,7 +67,7 @@ interface StoreState {
   logout: () => void;
   register: (name: string, email: string, password?: string, role?: Role) => void;
   
-  // User Management (Admin)
+  // User Management
   addUser: (user: Omit<User, 'id'>) => void;
   updateUser: (id: string, data: Partial<User>) => void;
   deleteUser: (id: string) => void;
@@ -84,27 +94,51 @@ const SEED_USERS: User[] = [
   { id: '4', name: 'Борис Иванов', email: 'bob@gmail.com', password: '123', role: 'patient', avatar: 'https://i.pravatar.cc/150?u=bob' },
 ];
 
+const SEED_SERVICES: Service[] = [
+  // Specialists
+  { id: 'svc_therapist', name: 'Терапевт', type: 'consultation' },
+  { id: 'svc_gastro', name: 'Гастроэнтеролог', type: 'specialist' },
+  { id: 'svc_endo', name: 'Эндокринолог', type: 'specialist' },
+  { id: 'svc_cardio', name: 'Кардиолог', type: 'specialist' },
+  { id: 'svc_neuro', name: 'Невролог', type: 'specialist' },
+  { id: 'svc_nutri', name: 'Нутрициолог', type: 'specialist' },
+  
+  // Tests
+  { id: 'svc_oak', name: 'Общий анализ крови', type: 'test' },
+  { id: 'svc_bio', name: 'Биохимия крови', type: 'test' },
+  { id: 'svc_hormones', name: 'Гормональный профиль', type: 'test' },
+  { id: 'svc_urine', name: 'Общий анализ мочи', type: 'test' },
+  
+  // Examinations
+  { id: 'svc_us_abdomen', name: 'УЗИ брюшной полости', type: 'test' },
+  { id: 'svc_mri', name: 'МРТ', type: 'test' },
+  { id: 'svc_ecg', name: 'ЭКГ', type: 'test' },
+];
+
 const SEED_PLANS: Plan[] = [
   { 
     id: 'basic', 
     name: 'Базовый Чекап', 
     price: 2900, 
     description: 'Основной мониторинг здоровья',
-    features: ['Консультация терапевта', 'Общий анализ крови', 'Звонок по результатам']
+    features: ['Консультация терапевта', 'Общий анализ крови', 'Звонок по результатам'],
+    allowedServiceIds: ['svc_therapist', 'svc_oak', 'svc_urine']
   },
   { 
     id: 'standard', 
     name: 'Полное Здоровье', 
     price: 5900, 
     description: 'Комплексный анализ организма',
-    features: ['2 консультации терапевта', 'Расширенная панель крови', 'Визит к кардиологу', 'УЗИ']
+    features: ['2 консультации терапевта', 'Расширенная панель крови', 'Визит к кардиологу', 'УЗИ'],
+    allowedServiceIds: ['svc_therapist', 'svc_oak', 'svc_bio', 'svc_cardio', 'svc_us_abdomen', 'svc_ecg']
   },
   { 
     id: 'premium', 
     name: 'Премиум Забота', 
     price: 12900, 
     description: 'Всесторонняя медицинская поддержка',
-    features: ['Безлимитный чат', 'Полный чекап организма', 'Нутрициолог', 'Личный менеджер']
+    features: ['Безлимитный чат', 'Полный чекап организма', 'Нутрициолог', 'Личный менеджер'],
+    allowedServiceIds: ['svc_therapist', 'svc_gastro', 'svc_endo', 'svc_cardio', 'svc_neuro', 'svc_nutri', 'svc_oak', 'svc_bio', 'svc_hormones', 'svc_urine', 'svc_us_abdomen', 'svc_mri', 'svc_ecg']
   },
 ];
 
@@ -116,10 +150,9 @@ const SEED_SUBSCRIPTIONS: Subscription[] = [
     status: 'active',
     startDate: '2024-05-01',
     route: [
-      { id: 's1', title: 'Первичная консультация терапевта', description: 'Сбор анамнеза и жалоб', status: 'completed', type: 'consultation', date: '2024-05-02' },
-      { id: 's2', title: 'Общий анализ крови (ОАК)', description: 'Сдается натощак', status: 'completed', type: 'test', date: '2024-05-05' },
-      { id: 's3', title: 'Прием кардиолога', description: 'Проверка сердечного ритма', status: 'pending', type: 'specialist', date: '2024-05-10' },
-      { id: 's4', title: 'Итоговая консультация', description: 'Обсуждение результатов и план лечения', status: 'pending', type: 'consultation' },
+      { id: 's1', title: 'Терапевт', description: 'Сбор анамнеза и жалоб', status: 'completed', type: 'consultation', date: '2024-05-02', serviceId: 'svc_therapist' },
+      { id: 's2', title: 'Общий анализ крови', description: 'Сдается натощак', status: 'completed', type: 'test', date: '2024-05-05', serviceId: 'svc_oak' },
+      { id: 's3', title: 'Кардиолог', description: 'Проверка сердечного ритма', status: 'pending', type: 'specialist', date: '2024-05-10', serviceId: 'svc_cardio' },
     ]
   }
 ];
@@ -135,13 +168,13 @@ export const useStore = create<StoreState>()(
       currentUser: null,
       users: SEED_USERS,
       plans: SEED_PLANS,
+      services: SEED_SERVICES,
       subscriptions: SEED_SUBSCRIPTIONS,
       messages: SEED_MESSAGES,
 
       login: (email, password) => {
         const state = get();
         const user = state.users.find(u => u.email === email);
-        
         if (user && user.password === password) {
           set({ currentUser: user });
           return true;
@@ -172,7 +205,6 @@ export const useStore = create<StoreState>()(
 
       updateUser: (id, data) => set((state) => ({
         users: state.users.map(u => u.id === id ? { ...u, ...data } : u),
-        // Also update current user if it's the same person
         currentUser: state.currentUser?.id === id ? { ...state.currentUser, ...data } : state.currentUser
       })),
 
@@ -183,13 +215,18 @@ export const useStore = create<StoreState>()(
 
       subscribe: (userId, planId) => set((state) => {
         const plan = state.plans.find(p => p.id === planId);
-        const initialRoute: Step[] = plan?.features.map((f, i) => ({
+        // Create initial route based on marketing features or just empty for doctor to fill?
+        // For MVP let's add some basic steps based on allowedServices (taking first few)
+        const initialServices = plan?.allowedServiceIds.slice(0, 2).map(id => state.services.find(s => s.id === id)).filter(Boolean) || [];
+        
+        const initialRoute: Step[] = initialServices.map(svc => ({
           id: Math.random().toString(36).substr(2, 9),
-          title: f,
-          description: 'Запланированный этап',
+          title: svc!.name,
+          description: 'Запланировано тарифом',
           status: 'pending',
-          type: i === 0 ? 'consultation' : 'test'
-        })) || [];
+          type: svc!.type,
+          serviceId: svc!.id
+        }));
 
         const newSub: Subscription = {
           id: Math.random().toString(36).substr(2, 9),
@@ -246,7 +283,7 @@ export const useStore = create<StoreState>()(
       })),
     }),
     {
-      name: '1med-storage-v2', // Changed version to force reset for new schema
+      name: '1med-storage-v3', // Increment version to reset data structure
     }
   )
 );
