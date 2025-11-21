@@ -21,7 +21,7 @@ export function Logo({ className, showSlogan = true, size = "md" }: LogoProps) {
       {/* Icon: Circle with Plus */}
       <div className={cn("relative flex items-center justify-center shrink-0", currentSize.icon)}>
         {/* Circle Border */}
-        <div className="absolute inset-0 rounded-full border-[3px] border-[#00CDB8]" />
+        <div className="absolute inset-0 rounded-full border-[6px] border-[#00CDB8]" />
         {/* Plus Sign */}
         <svg 
           viewBox="0 0 24 24" 
