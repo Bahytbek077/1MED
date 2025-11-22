@@ -4,6 +4,13 @@ import { persist } from 'zustand/middleware';
 export type Role = 'patient' | 'doctor' | 'admin';
 export type ServiceType = 'consultation' | 'test' | 'specialist';
 
+export interface DoctorProfile {
+  specialization: string;
+  experience: number;
+  contacts: string;
+  bio: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -11,6 +18,7 @@ export interface User {
   password?: string;
   role: Role;
   avatar?: string;
+  doctorProfile?: DoctorProfile;
 }
 
 export interface Service {
@@ -45,6 +53,7 @@ export interface Subscription {
   status: 'active' | 'inactive' | 'pending';
   startDate: string;
   route: Step[];
+  doctorNotes?: string;
 }
 
 export interface Message {
@@ -89,11 +98,28 @@ interface StoreState {
   addService: (service: Omit<Service, 'id'>) => void;
   updateService: (id: string, data: Partial<Service>) => void;
   deleteService: (id: string) => void;
+
+  // Additional Doctor Actions
+  updateSubscription: (subId: string, data: Partial<Subscription>) => void;
+  updateStepDate: (subId: string, stepId: string, date: string) => void;
 }
 
 // Seed Data
 const SEED_USERS: User[] = [
-  { id: '1', name: 'Др. Хаус', email: 'doctor@1med.com', password: '123', role: 'doctor', avatar: 'https://i.pravatar.cc/150?u=doctor' },
+  { 
+    id: '1', 
+    name: 'Др. Хаус', 
+    email: 'doctor@1med.com', 
+    password: '123', 
+    role: 'doctor', 
+    avatar: 'https://i.pravatar.cc/150?u=doctor',
+    doctorProfile: {
+      specialization: 'Терапевт-диагност',
+      experience: 15,
+      contacts: '+7 (999) 123-45-67',
+      bio: 'Специализируюсь на сложных случаях и редких заболеваниях.'
+    }
+  },
   { id: '2', name: 'Алиса Петрова', email: 'patient@gmail.com', password: '123', role: 'patient', avatar: 'https://i.pravatar.cc/150?u=alice' },
   { id: '3', name: 'Администратор', email: 'admin@1med.com', password: '123', role: 'admin' },
   { id: '4', name: 'Борис Иванов', email: 'bob@gmail.com', password: '123', role: 'patient', avatar: 'https://i.pravatar.cc/150?u=bob' },
@@ -124,7 +150,7 @@ const SEED_PLANS: Plan[] = [
   { 
     id: 'basic', 
     name: 'Базовый Чекап', 
-    price: 2900, 
+    price: 14500, 
     description: 'Основной мониторинг здоровья',
     features: ['Консультация терапевта', 'Общий анализ крови', 'Звонок по результатам'],
     allowedServiceIds: ['svc_therapist', 'svc_oak', 'svc_urine']
@@ -132,7 +158,7 @@ const SEED_PLANS: Plan[] = [
   { 
     id: 'standard', 
     name: 'Полное Здоровье', 
-    price: 5900, 
+    price: 29500, 
     description: 'Комплексный анализ организма',
     features: ['2 консультации терапевта', 'Расширенная панель крови', 'Визит к кардиологу', 'УЗИ'],
     allowedServiceIds: ['svc_therapist', 'svc_oak', 'svc_bio', 'svc_cardio', 'svc_us_abdomen', 'svc_ecg']
@@ -140,7 +166,7 @@ const SEED_PLANS: Plan[] = [
   { 
     id: 'premium', 
     name: 'Премиум Забота', 
-    price: 12900, 
+    price: 64500, 
     description: 'Всесторонняя медицинская поддержка',
     features: ['Безлимитный чат', 'Полный чекап организма', 'Нутрициолог', 'Личный менеджер'],
     allowedServiceIds: ['svc_therapist', 'svc_gastro', 'svc_endo', 'svc_cardio', 'svc_neuro', 'svc_nutri', 'svc_oak', 'svc_bio', 'svc_hormones', 'svc_urine', 'svc_us_abdomen', 'svc_mri', 'svc_ecg']
@@ -303,9 +329,21 @@ export const useStore = create<StoreState>()(
           allowedServiceIds: p.allowedServiceIds.filter(sid => sid !== id)
         }))
       })),
+
+      updateSubscription: (subId, data) => set((state) => ({
+        subscriptions: state.subscriptions.map(sub => sub.id === subId ? { ...sub, ...data } : sub)
+      })),
+
+      updateStepDate: (subId, stepId, date) => set((state) => ({
+        subscriptions: state.subscriptions.map(sub => 
+          sub.id === subId 
+            ? { ...sub, route: sub.route.map(s => s.id === stepId ? { ...s, date } : s) }
+            : sub
+        )
+      })),
     }),
     {
-      name: '1med-storage-v3', // Increment version to reset data structure
+      name: '1med-storage-v4', // Increment version to reset data structure
     }
   )
 );

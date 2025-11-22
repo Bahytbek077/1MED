@@ -272,7 +272,7 @@ export default function AdminDashboard() {
                </CardHeader>
                <CardContent className="space-y-4">
                  <div className="space-y-2">
-                   <label className="text-sm font-medium">Цена (₽)</label>
+                   <label className="text-sm font-medium">Цена (₸)</label>
                    <Input 
                       type="number" 
                       value={plan.price} 

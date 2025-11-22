@@ -73,7 +73,7 @@ export default function AdminPlans() {
                   <div>
                     <CardTitle className="text-xl">{plan.name}</CardTitle>
                     <CardDescription className="mt-1 font-bold text-primary text-lg">
-                      {plan.price.toLocaleString()} ₽
+                      {plan.price.toLocaleString()} ₸
                     </CardDescription>
                   </div>
                   <Button variant="outline" size="icon" onClick={() => openEdit(plan)}>
@@ -122,7 +122,7 @@ export default function AdminPlans() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Цена (₽)</Label>
+                    <Label>Цена (₸)</Label>
                     <Input 
                       type="number"
                       value={formData.price || 0} 

@@ -47,7 +47,7 @@ export default function PatientDashboard() {
                 <CardHeader>
                   <CardTitle className="text-2xl text-primary">{plan.name}</CardTitle>
                   <CardDescription className="text-lg font-semibold mt-2">
-                    {plan.price} ₽ / год
+                    {plan.price.toLocaleString()} ₸ / год
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 flex-1">
