@@ -38,9 +38,8 @@ name = "Start application"
 author = "agent"
 
 [[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev:client"
-waitForPort = 5000
+task = "workflow.run"
+args = "Start application"
 
 [agent]
 mockupState = "MOCKUP"
