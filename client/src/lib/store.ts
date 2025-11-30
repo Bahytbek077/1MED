@@ -4,13 +4,6 @@ import { persist } from 'zustand/middleware';
 export type Role = 'patient' | 'doctor' | 'admin';
 export type ServiceType = 'consultation' | 'test' | 'specialist';
 
-export interface DoctorProfile {
-  specialization: string;
-  experience: number;
-  contacts: string;
-  bio: string;
-}
-
 export interface User {
   id: string;
   name: string;
@@ -18,7 +11,11 @@ export interface User {
   password?: string;
   role: Role;
   avatar?: string;
-  doctorProfile?: DoctorProfile;
+  // Doctor specific fields
+  specialization?: string;
+  experience?: number;
+  phone?: string;
+  bio?: string;
 }
 
 export interface Service {
@@ -53,7 +50,7 @@ export interface Subscription {
   status: 'active' | 'inactive' | 'pending';
   startDate: string;
   route: Step[];
-  doctorNotes?: string;
+  doctorNotes?: string; // Notes from doctor about this subscription/patient
 }
 
 export interface Message {
@@ -89,6 +86,8 @@ interface StoreState {
   updateStepStatus: (subId: string, stepId: string, status: 'pending' | 'completed') => void;
   addStep: (subId: string, step: Omit<Step, 'id' | 'status'>) => void;
   removeStep: (subId: string, stepId: string) => void;
+  updateStepDate: (subId: string, stepId: string, date: string) => void;
+  updateSubscriptionNotes: (subId: string, notes: string) => void;
   
   // Admin Actions
   toggleSubscription: (subId: string) => void;
@@ -98,10 +97,6 @@ interface StoreState {
   addService: (service: Omit<Service, 'id'>) => void;
   updateService: (id: string, data: Partial<Service>) => void;
   deleteService: (id: string) => void;
-
-  // Additional Doctor Actions
-  updateSubscription: (subId: string, data: Partial<Subscription>) => void;
-  updateStepDate: (subId: string, stepId: string, date: string) => void;
 }
 
 // Seed Data
@@ -113,12 +108,10 @@ const SEED_USERS: User[] = [
     password: '123', 
     role: 'doctor', 
     avatar: 'https://i.pravatar.cc/150?u=doctor',
-    doctorProfile: {
-      specialization: 'Терапевт-диагност',
-      experience: 15,
-      contacts: '+7 (999) 123-45-67',
-      bio: 'Специализируюсь на сложных случаях и редких заболеваниях.'
-    }
+    specialization: 'Терапевт-диагност',
+    experience: 15,
+    phone: '+7 (999) 123-45-67',
+    bio: 'Специализируюсь на сложных диагностических случаях. Люблю загадки.'
   },
   { id: '2', name: 'Алиса Петрова', email: 'patient@gmail.com', password: '123', role: 'patient', avatar: 'https://i.pravatar.cc/150?u=alice' },
   { id: '3', name: 'Администратор', email: 'admin@1med.com', password: '123', role: 'admin' },
@@ -180,6 +173,7 @@ const SEED_SUBSCRIPTIONS: Subscription[] = [
     planId: 'standard',
     status: 'active',
     startDate: '2024-05-01',
+    doctorNotes: 'Пациент жалуется на утомляемость. Рекомендую проверить уровень железа и витамина D.',
     route: [
       { id: 's1', title: 'Терапевт', description: 'Сбор анамнеза и жалоб', status: 'completed', type: 'consultation', date: '2024-05-02', serviceId: 'svc_therapist' },
       { id: 's2', title: 'Общий анализ крови', description: 'Сдается натощак', status: 'completed', type: 'test', date: '2024-05-05', serviceId: 'svc_oak' },
@@ -246,8 +240,6 @@ export const useStore = create<StoreState>()(
 
       subscribe: (userId, planId) => set((state) => {
         const plan = state.plans.find(p => p.id === planId);
-        // Create initial route based on marketing features or just empty for doctor to fill?
-        // For MVP let's add some basic steps based on allowedServices (taking first few)
         const initialServices = plan?.allowedServiceIds.slice(0, 2).map(id => state.services.find(s => s.id === id)).filter(Boolean) || [];
         
         const initialRoute: Step[] = initialServices.map(svc => ({
@@ -281,6 +273,22 @@ export const useStore = create<StoreState>()(
         subscriptions: state.subscriptions.map(sub => 
           sub.id === subId 
             ? { ...sub, route: sub.route.map(s => s.id === stepId ? { ...s, status } : s) }
+            : sub
+        )
+      })),
+
+      updateStepDate: (subId, stepId, date) => set((state) => ({
+        subscriptions: state.subscriptions.map(sub => 
+          sub.id === subId 
+            ? { ...sub, route: sub.route.map(s => s.id === stepId ? { ...s, date } : s) }
+            : sub
+        )
+      })),
+
+      updateSubscriptionNotes: (subId, notes) => set((state) => ({
+        subscriptions: state.subscriptions.map(sub => 
+          sub.id === subId 
+            ? { ...sub, doctorNotes: notes }
             : sub
         )
       })),
@@ -323,27 +331,14 @@ export const useStore = create<StoreState>()(
 
       deleteService: (id) => set((state) => ({
         services: state.services.filter(s => s.id !== id),
-        // Optionally remove from plans too, but for now let's keep it simple or filter in UI
         plans: state.plans.map(p => ({
           ...p,
           allowedServiceIds: p.allowedServiceIds.filter(sid => sid !== id)
         }))
       })),
-
-      updateSubscription: (subId, data) => set((state) => ({
-        subscriptions: state.subscriptions.map(sub => sub.id === subId ? { ...sub, ...data } : sub)
-      })),
-
-      updateStepDate: (subId, stepId, date) => set((state) => ({
-        subscriptions: state.subscriptions.map(sub => 
-          sub.id === subId 
-            ? { ...sub, route: sub.route.map(s => s.id === stepId ? { ...s, date } : s) }
-            : sub
-        )
-      })),
     }),
     {
-      name: '1med-storage-v4', // Increment version to reset data structure
+      name: '1med-storage-v4', // Version bump to force data refresh with new fields
     }
   )
 );
