@@ -5,6 +5,7 @@ import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
+import type { Request, Response, NextFunction } from "express";
 
 const viteLogger = createLogger();
 
@@ -44,6 +45,11 @@ export async function setupVite(app: Express, server: Server) {
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
 
+    // Skip API routes - let them be handled by your API routes
+    if (url.startsWith("/api")) {
+      return next();
+    }
+
     try {
       const clientTemplate = path.resolve(
         import.meta.dirname,
@@ -79,8 +85,12 @@ export function serveStatic(app: Express) {
   // Serve static assets (JS, CSS, images)
   app.use(express.static(distPath));
 
-  // SPA fallback for React Router
-  app.use("*", (_req, res) => {
+  // SPA fallback for React Router - exclude API routes
+  app.use("*", (req: Request, res: Response, next: NextFunction) => {
+    // Skip API routes - let them be handled by your API routes
+    if (req.originalUrl.startsWith("/api")) {
+      return next();
+    }
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
