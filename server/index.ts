@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { testConnection } from "./db";
 
 const app = express();
 
@@ -47,6 +48,15 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  try {
+    const dbConnected = await testConnection();
+    if (!dbConnected) {
+      log('Warning: Database connection test failed. Some features may not work.');
+    }
+  } catch (err) {
+    log('Warning: Could not test database connection: ' + (err as Error).message);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
