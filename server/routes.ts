@@ -3,9 +3,24 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertServiceSchema, insertPlanSchema, insertSubscriptionSchema, insertStepSchema, insertMessageSchema } from "@shared/schema";
 import { z } from "zod";
+import { isDatabaseAvailable } from "./db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  await storage.seedInitialData();
+  if (isDatabaseAvailable()) {
+    try {
+      await storage.seedInitialData();
+    } catch (err) {
+      console.error('Failed to seed initial data:', (err as Error).message);
+    }
+  }
+
+  app.get("/api/health", (req, res) => {
+    res.json({ 
+      status: "ok", 
+      database: isDatabaseAvailable() ? "connected" : "unavailable",
+      timestamp: new Date().toISOString()
+    });
+  });
 
   app.get("/api/users", async (req, res) => {
     try {

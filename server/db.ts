@@ -3,37 +3,83 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+let pool: Pool | null = null;
+let db: ReturnType<typeof drizzle> | null = null;
+let dbInitialized = false;
+let dbError: string | null = null;
+
+function initializeDatabase() {
+  if (dbInitialized) return;
+  dbInitialized = true;
+
+  const connectionString = process.env.DATABASE_URL;
+  
+  if (!connectionString) {
+    dbError = "DATABASE_URL is not set";
+    console.error("Warning: DATABASE_URL must be set for database functionality");
+    return;
+  }
+
+  if (connectionString.includes('helium') && process.env.NODE_ENV === 'production') {
+    dbError = "Internal hostname 'helium' cannot be used in production. Please set DATABASE_URL to the external Neon connection string.";
+    console.error("Warning:", dbError);
+    return;
+  }
+
+  try {
+    neonConfig.webSocketConstructor = ws;
+    neonConfig.useSecureWebSocket = true;
+    neonConfig.pipelineTLS = false;
+    neonConfig.pipelineConnect = false;
+
+    pool = new Pool({ 
+      connectionString,
+      connectionTimeoutMillis: 15000,
+      max: 10,
+    });
+
+    pool.on('error', (err) => {
+      console.error('Database pool error:', err.message);
+    });
+
+    db = drizzle({ client: pool, schema });
+    console.log('Database initialized');
+  } catch (err) {
+    dbError = (err as Error).message;
+    console.error('Failed to initialize database:', dbError);
+  }
 }
 
-neonConfig.webSocketConstructor = ws;
-neonConfig.useSecureWebSocket = true;
-neonConfig.pipelineTLS = false;
-neonConfig.pipelineConnect = false;
+initializeDatabase();
 
-let connectionString = process.env.DATABASE_URL;
-
-const isProduction = process.env.NODE_ENV === 'production';
-if (isProduction && process.env.DATABASE_URL_EXTERNAL) {
-  connectionString = process.env.DATABASE_URL_EXTERNAL;
+export function getDb() {
+  if (!db) {
+    throw new Error(dbError || 'Database not initialized');
+  }
+  return db;
 }
 
-export const pool = new Pool({ 
-  connectionString,
-  connectionTimeoutMillis: 15000,
-  max: 10,
-});
+export function getPool() {
+  if (!pool) {
+    throw new Error(dbError || 'Database pool not initialized');
+  }
+  return pool;
+}
 
-pool.on('error', (err) => {
-  console.error('Database pool error:', err.message);
-});
+export function isDatabaseAvailable(): boolean {
+  return db !== null && pool !== null;
+}
 
-export const db = drizzle({ client: pool, schema });
+export function getDatabaseError(): string | null {
+  return dbError;
+}
 
 export async function testConnection(): Promise<boolean> {
+  if (!pool) {
+    console.log('Database pool not available');
+    return false;
+  }
+  
   try {
     const client = await pool.connect();
     await client.query('SELECT 1');
@@ -41,7 +87,9 @@ export async function testConnection(): Promise<boolean> {
     console.log('Database connection successful');
     return true;
   } catch (err) {
-    console.error('Database connection test failed:', err);
+    console.error('Database connection test failed:', (err as Error).message);
     return false;
   }
 }
+
+export { db, pool };
