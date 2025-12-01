@@ -33,7 +33,7 @@ export default function Auth() {
         setLocation(`/${user.role}/dashboard`);
       }
     } else {
-      alert("Неверный email или пароль. (Демо пароль: 123)");
+      alert("Неверный email или пароль");
     }
   };
 
@@ -51,13 +51,6 @@ export default function Auth() {
     setLocation("/patient/dashboard");
   };
 
-  const getDemoEmail = (role: Role) => {
-    switch(role) {
-        case 'patient': return 'patient@gmail.com';
-        case 'doctor': return 'doctor@1med.com';
-        case 'admin': return 'admin@1med.com';
-    }
-  };
 
   if (!selectedRole) {
     return (
@@ -76,7 +69,7 @@ export default function Auth() {
                 {/* Patient Card */}
                 <Card 
                     className="cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-xl border-2 hover:border-primary/50 group bg-white/80 backdrop-blur"
-                    onClick={() => { setSelectedRole('patient'); setEmail(getDemoEmail('patient')); setPassword('123'); }}
+                    onClick={() => { setSelectedRole('patient'); }}
                 >
                     <CardHeader className="text-center space-y-4 pb-2">
                         <div className="mx-auto h-14 w-14 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors text-primary">
@@ -95,7 +88,7 @@ export default function Auth() {
                 {/* Doctor Card */}
                 <Card 
                     className="cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-xl border-2 hover:border-primary/50 group bg-white/80 backdrop-blur"
-                    onClick={() => { setSelectedRole('doctor'); setEmail(getDemoEmail('doctor')); setPassword('123'); }}
+                    onClick={() => { setSelectedRole('doctor'); }}
                 >
                     <CardHeader className="text-center space-y-4 pb-2">
                         <div className="mx-auto h-14 w-14 rounded-full bg-teal-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors text-primary">
@@ -114,7 +107,7 @@ export default function Auth() {
                 {/* Admin Card */}
                 <Card 
                     className="cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-xl border-2 hover:border-primary/50 group bg-white/80 backdrop-blur"
-                    onClick={() => { setSelectedRole('admin'); setEmail(getDemoEmail('admin')); setPassword('123'); }}
+                    onClick={() => { setSelectedRole('admin'); }}
                 >
                     <CardHeader className="text-center space-y-4 pb-2">
                         <div className="mx-auto h-14 w-14 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors text-primary">
@@ -174,8 +167,7 @@ export default function Auth() {
                             setEmail={setEmail} 
                             password={password}
                             setPassword={setPassword}
-                            handleLogin={handleLogin} 
-                            role={selectedRole} 
+                            handleLogin={handleLogin}
                         />
                     </TabsContent>
                     
@@ -229,8 +221,7 @@ export default function Auth() {
                     setEmail={setEmail} 
                     password={password}
                     setPassword={setPassword}
-                    handleLogin={handleLogin} 
-                    role={selectedRole} 
+                    handleLogin={handleLogin}
                 />
             )}
         </CardContent>
@@ -239,13 +230,12 @@ export default function Auth() {
   );
 }
 
-function LoginForm({ email, setEmail, password, setPassword, handleLogin, role }: { 
+function LoginForm({ email, setEmail, password, setPassword, handleLogin }: { 
     email: string, 
     setEmail: (s: string) => void, 
     password: string,
     setPassword: (s: string) => void,
-    handleLogin: (e: React.FormEvent) => void, 
-    role: Role 
+    handleLogin: (e: React.FormEvent) => void
 }) {
     return (
         <form onSubmit={handleLogin} className="space-y-4">
@@ -253,7 +243,7 @@ function LoginForm({ email, setEmail, password, setPassword, handleLogin, role }
                 <Label htmlFor="email">Email</Label>
                 <Input 
                 id="email" 
-                placeholder={role === 'doctor' ? "doctor@1med.com" : role === 'admin' ? "admin@1med.com" : "patient@gmail.com"}
+                placeholder="Введите e-mail"
                 type="email" 
                 required 
                 value={email}
@@ -267,7 +257,7 @@ function LoginForm({ email, setEmail, password, setPassword, handleLogin, role }
                     <Lock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
                         id="password" 
-                        placeholder="******" 
+                        placeholder="Введите пароль" 
                         type="password" 
                         required 
                         value={password}
@@ -277,16 +267,6 @@ function LoginForm({ email, setEmail, password, setPassword, handleLogin, role }
                 </div>
             </div>
             <Button type="submit" className="w-full text-lg h-11">Войти</Button>
-            
-            <div className="pt-4 text-xs text-center text-muted-foreground space-y-1 bg-muted/50 p-2 rounded border">
-                <p className="font-semibold">Демо доступ:</p>
-                <p><span className="font-mono text-primary">
-                    {role === 'patient' && 'patient@gmail.com'}
-                    {role === 'doctor' && 'doctor@1med.com'}
-                    {role === 'admin' && 'admin@1med.com'}
-                </span></p>
-                <p>Пароль: <span className="font-mono text-primary">123</span></p>
-            </div>
         </form>
     );
 }
