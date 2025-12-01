@@ -19,9 +19,9 @@ export default function Auth() {
   const { login, register } = useStore();
   const [_, setLocation] = useLocation();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = login(email, password);
+    const success = await login(email, password);
     
     if (success) {
       const user = useStore.getState().currentUser;
@@ -37,7 +37,7 @@ export default function Auth() {
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedRole !== 'patient') {
         alert("Самостоятельная регистрация доступна только для пациентов.");
@@ -47,8 +47,12 @@ export default function Auth() {
         alert("Введите пароль");
         return;
     }
-    register(name, email, password, "patient");
-    setLocation("/patient/dashboard");
+    try {
+      await register(name, email, password, "patient");
+      setLocation("/patient/dashboard");
+    } catch (error) {
+      alert("Ошибка регистрации");
+    }
   };
 
 

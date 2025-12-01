@@ -1,344 +1,322 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { api, type SubscriptionWithSteps, type Role, type ServiceType } from './api';
+import type { User, Service, Plan, Message, Step } from '@shared/schema';
 
-export type Role = 'patient' | 'doctor' | 'admin';
-export type ServiceType = 'consultation' | 'test' | 'specialist';
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  password?: string;
-  role: Role;
-  avatar?: string;
-  // Doctor specific fields
-  specialization?: string;
-  experience?: number;
-  phone?: string;
-  bio?: string;
-}
-
-export interface Service {
-  id: string;
-  name: string;
-  type: ServiceType;
-}
-
-export interface Plan {
-  id: string;
-  name: string;
-  price: number;
-  description: string;
-  features: string[]; // Marketing text
-  allowedServiceIds: string[]; // Logic restrictions
-}
-
-export interface Step {
-  id: string;
-  title: string;
-  description: string;
-  status: 'pending' | 'completed';
-  date?: string;
-  type: ServiceType;
-  serviceId?: string; // Link to the specific service
-}
-
-export interface Subscription {
-  id: string;
-  userId: string;
-  planId: string;
-  status: 'active' | 'inactive' | 'pending';
-  startDate: string;
-  route: Step[];
-  doctorNotes?: string; // Notes from doctor about this subscription/patient
-}
-
-export interface Message {
-  id: string;
-  fromId: string;
-  toId: string;
-  content: string;
-  timestamp: string;
-}
+export type { Role, ServiceType, User, Service, Plan, Message, Step, SubscriptionWithSteps };
+export type Subscription = SubscriptionWithSteps;
 
 interface StoreState {
   currentUser: User | null;
   users: User[];
   plans: Plan[];
   services: Service[];
-  subscriptions: Subscription[];
+  subscriptions: SubscriptionWithSteps[];
   messages: Message[];
+  isLoading: boolean;
   
-  login: (email: string, password?: string) => boolean;
+  loadData: () => Promise<void>;
+  
+  login: (email: string, password?: string) => Promise<boolean>;
   logout: () => void;
-  register: (name: string, email: string, password?: string, role?: Role) => void;
+  register: (name: string, email: string, password?: string, role?: Role) => Promise<void>;
   
-  // User Management
-  addUser: (user: Omit<User, 'id'>) => void;
-  updateUser: (id: string, data: Partial<User>) => void;
-  deleteUser: (id: string) => void;
+  addUser: (user: { name: string; email: string; password: string; role: string }) => Promise<void>;
+  updateUser: (id: string, data: Partial<User>) => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
 
-  // Patient Actions
-  subscribe: (userId: string, planId: string) => void;
-  sendMessage: (fromId: string, toId: string, content: string) => void;
+  subscribe: (userId: string, planId: string) => Promise<void>;
+  sendMessage: (fromId: string, toId: string, content: string) => Promise<void>;
   
-  // Doctor Actions
-  updateStepStatus: (subId: string, stepId: string, status: 'pending' | 'completed') => void;
-  addStep: (subId: string, step: Omit<Step, 'id' | 'status'>) => void;
-  removeStep: (subId: string, stepId: string) => void;
-  updateStepDate: (subId: string, stepId: string, date: string) => void;
-  updateSubscriptionNotes: (subId: string, notes: string) => void;
+  updateStepStatus: (subId: string, stepId: string, status: 'pending' | 'completed') => Promise<void>;
+  addStep: (subId: string, step: { title: string; description: string; type: string; serviceId?: string; date?: Date | null }) => Promise<void>;
+  removeStep: (subId: string, stepId: string) => Promise<void>;
+  updateStepDate: (subId: string, stepId: string, date: string) => Promise<void>;
+  updateSubscriptionNotes: (subId: string, notes: string) => Promise<void>;
   
-  // Admin Actions
-  toggleSubscription: (subId: string) => void;
-  updatePlan: (planId: string, data: Partial<Plan>) => void;
+  toggleSubscription: (subId: string) => Promise<void>;
+  updatePlan: (planId: string, data: Partial<Plan>) => Promise<void>;
 
-  // Service Management
-  addService: (service: Omit<Service, 'id'>) => void;
-  updateService: (id: string, data: Partial<Service>) => void;
-  deleteService: (id: string) => void;
+  addService: (service: Omit<Service, 'id'>) => Promise<void>;
+  updateService: (id: string, data: Partial<Service>) => Promise<void>;
+  deleteService: (id: string) => Promise<void>;
 }
-
-// Seed Data
-const SEED_USERS: User[] = [
-  { 
-    id: '1', 
-    name: 'Др. Хаус', 
-    email: 'doctor@1med.com', 
-    password: '123', 
-    role: 'doctor', 
-    avatar: 'https://i.pravatar.cc/150?u=doctor',
-    specialization: 'Терапевт-диагност',
-    experience: 15,
-    phone: '+7 (999) 123-45-67',
-    bio: 'Специализируюсь на сложных диагностических случаях. Люблю загадки.'
-  },
-  { id: '2', name: 'Алиса Петрова', email: 'patient@gmail.com', password: '123', role: 'patient', avatar: 'https://i.pravatar.cc/150?u=alice' },
-  { id: '3', name: 'Администратор', email: 'admin@1med.com', password: '123', role: 'admin' },
-  { id: '4', name: 'Борис Иванов', email: 'bob@gmail.com', password: '123', role: 'patient', avatar: 'https://i.pravatar.cc/150?u=bob' },
-];
-
-const SEED_SERVICES: Service[] = [
-  // Specialists
-  { id: 'svc_therapist', name: 'Терапевт', type: 'consultation' },
-  { id: 'svc_gastro', name: 'Гастроэнтеролог', type: 'specialist' },
-  { id: 'svc_endo', name: 'Эндокринолог', type: 'specialist' },
-  { id: 'svc_cardio', name: 'Кардиолог', type: 'specialist' },
-  { id: 'svc_neuro', name: 'Невролог', type: 'specialist' },
-  { id: 'svc_nutri', name: 'Нутрициолог', type: 'specialist' },
-  
-  // Tests
-  { id: 'svc_oak', name: 'Общий анализ крови', type: 'test' },
-  { id: 'svc_bio', name: 'Биохимия крови', type: 'test' },
-  { id: 'svc_hormones', name: 'Гормональный профиль', type: 'test' },
-  { id: 'svc_urine', name: 'Общий анализ мочи', type: 'test' },
-  
-  // Examinations
-  { id: 'svc_us_abdomen', name: 'УЗИ брюшной полости', type: 'test' },
-  { id: 'svc_mri', name: 'МРТ', type: 'test' },
-  { id: 'svc_ecg', name: 'ЭКГ', type: 'test' },
-];
-
-const SEED_PLANS: Plan[] = [
-  { 
-    id: 'basic', 
-    name: 'Базовый Чекап', 
-    price: 14500, 
-    description: 'Основной мониторинг здоровья',
-    features: ['Консультация терапевта', 'Общий анализ крови', 'Звонок по результатам'],
-    allowedServiceIds: ['svc_therapist', 'svc_oak', 'svc_urine']
-  },
-  { 
-    id: 'standard', 
-    name: 'Полное Здоровье', 
-    price: 29500, 
-    description: 'Комплексный анализ организма',
-    features: ['2 консультации терапевта', 'Расширенная панель крови', 'Визит к кардиологу', 'УЗИ'],
-    allowedServiceIds: ['svc_therapist', 'svc_oak', 'svc_bio', 'svc_cardio', 'svc_us_abdomen', 'svc_ecg']
-  },
-  { 
-    id: 'premium', 
-    name: 'Премиум Забота', 
-    price: 64500, 
-    description: 'Всесторонняя медицинская поддержка',
-    features: ['Безлимитный чат', 'Полный чекап организма', 'Нутрициолог', 'Личный менеджер'],
-    allowedServiceIds: ['svc_therapist', 'svc_gastro', 'svc_endo', 'svc_cardio', 'svc_neuro', 'svc_nutri', 'svc_oak', 'svc_bio', 'svc_hormones', 'svc_urine', 'svc_us_abdomen', 'svc_mri', 'svc_ecg']
-  },
-];
-
-const SEED_SUBSCRIPTIONS: Subscription[] = [
-  {
-    id: 'sub1',
-    userId: '2',
-    planId: 'standard',
-    status: 'active',
-    startDate: '2024-05-01',
-    doctorNotes: 'Пациент жалуется на утомляемость. Рекомендую проверить уровень железа и витамина D.',
-    route: [
-      { id: 's1', title: 'Терапевт', description: 'Сбор анамнеза и жалоб', status: 'completed', type: 'consultation', date: '2024-05-02', serviceId: 'svc_therapist' },
-      { id: 's2', title: 'Общий анализ крови', description: 'Сдается натощак', status: 'completed', type: 'test', date: '2024-05-05', serviceId: 'svc_oak' },
-      { id: 's3', title: 'Кардиолог', description: 'Проверка сердечного ритма', status: 'pending', type: 'specialist', date: '2024-05-10', serviceId: 'svc_cardio' },
-    ]
-  }
-];
-
-const SEED_MESSAGES: Message[] = [
-  { id: 'm1', fromId: '2', toId: '1', content: 'Здравствуйте, доктор Хаус. Когда лучше сдать кровь?', timestamp: new Date(Date.now() - 86400000).toISOString() },
-  { id: 'm2', fromId: '1', toId: '2', content: 'Добрый день, Алиса. Желательно утром натощак, до 10:00.', timestamp: new Date(Date.now() - 80000000).toISOString() },
-];
 
 export const useStore = create<StoreState>()(
   persist(
     (set, get) => ({
       currentUser: null,
-      users: SEED_USERS,
-      plans: SEED_PLANS,
-      services: SEED_SERVICES,
-      subscriptions: SEED_SUBSCRIPTIONS,
-      messages: SEED_MESSAGES,
+      users: [],
+      plans: [],
+      services: [],
+      subscriptions: [],
+      messages: [],
+      isLoading: false,
 
-      login: (email, password) => {
-        const state = get();
-        const user = state.users.find(u => u.email === email);
-        if (user && user.password === password) {
-          set({ currentUser: user });
-          return true;
+      loadData: async () => {
+        set({ isLoading: true });
+        try {
+          const [users, plans, services, subscriptions, messages] = await Promise.all([
+            api.users.getAll(),
+            api.plans.getAll(),
+            api.services.getAll(),
+            api.subscriptions.getAll(),
+            api.messages.getAll(),
+          ]);
+          set({ users, plans, services, subscriptions, messages, isLoading: false });
+        } catch (error) {
+          console.error('Failed to load data:', error);
+          set({ isLoading: false });
         }
-        return false;
+      },
+
+      login: async (email, password) => {
+        try {
+          const user = await api.auth.login(email, password || '');
+          set({ currentUser: user });
+          await get().loadData();
+          return true;
+        } catch (error) {
+          console.error('Login failed:', error);
+          return false;
+        }
       },
 
       logout: () => set({ currentUser: null }),
 
-      register: (name, email, password, role = 'patient') => set((state) => {
-        const newUser: User = { 
-          id: Math.random().toString(36).substr(2, 9), 
-          name, 
-          email, 
-          password, 
-          role 
-        };
-        return { users: [...state.users, newUser], currentUser: newUser };
-      }),
+      register: async (name, email, password, role = 'patient') => {
+        try {
+          const user = await api.auth.register({ name, email, password: password || '', role });
+          set({ currentUser: user });
+          await get().loadData();
+        } catch (error) {
+          console.error('Registration failed:', error);
+          throw error;
+        }
+      },
 
-      addUser: (userData) => set((state) => {
-        const newUser: User = { 
-          ...userData,
-          id: Math.random().toString(36).substr(2, 9), 
-        };
-        return { users: [...state.users, newUser] };
-      }),
+      addUser: async (userData) => {
+        try {
+          const newUser = await api.users.create(userData as any);
+          set(state => ({ users: [...state.users, newUser] }));
+        } catch (error) {
+          console.error('Failed to add user:', error);
+          throw error;
+        }
+      },
 
-      updateUser: (id, data) => set((state) => ({
-        users: state.users.map(u => u.id === id ? { ...u, ...data } : u),
-        currentUser: state.currentUser?.id === id ? { ...state.currentUser, ...data } : state.currentUser
-      })),
+      updateUser: async (id, data) => {
+        try {
+          const updatedUser = await api.users.update(id, data);
+          set(state => ({
+            users: state.users.map(u => u.id === id ? updatedUser : u),
+            currentUser: state.currentUser?.id === id ? updatedUser : state.currentUser
+          }));
+        } catch (error) {
+          console.error('Failed to update user:', error);
+          throw error;
+        }
+      },
 
-      deleteUser: (id) => set((state) => ({
-        users: state.users.filter(u => u.id !== id),
-        subscriptions: state.subscriptions.filter(s => s.userId !== id)
-      })),
+      deleteUser: async (id) => {
+        try {
+          await api.users.delete(id);
+          set(state => ({
+            users: state.users.filter(u => u.id !== id),
+            subscriptions: state.subscriptions.filter(s => s.userId !== id)
+          }));
+        } catch (error) {
+          console.error('Failed to delete user:', error);
+          throw error;
+        }
+      },
 
-      subscribe: (userId, planId) => set((state) => {
-        const plan = state.plans.find(p => p.id === planId);
-        const initialServices = plan?.allowedServiceIds.slice(0, 2).map(id => state.services.find(s => s.id === id)).filter(Boolean) || [];
-        
-        const initialRoute: Step[] = initialServices.map(svc => ({
-          id: Math.random().toString(36).substr(2, 9),
-          title: svc!.name,
-          description: 'Запланировано тарифом',
-          status: 'pending',
-          type: svc!.type,
-          serviceId: svc!.id
-        }));
+      subscribe: async (userId, planId) => {
+        try {
+          const newSub = await api.subscriptions.create({ userId, planId, status: 'active' });
+          const plan = get().plans.find(p => p.id === planId);
+          const services = get().services;
+          
+          const initialServiceIds = plan?.allowedServiceIds?.slice(0, 2) || [];
+          for (const serviceId of initialServiceIds) {
+            const svc = services.find(s => s.id === serviceId);
+            if (svc) {
+              await api.steps.create(newSub.id, {
+                title: svc.name,
+                description: 'Запланировано тарифом',
+                type: svc.type,
+                serviceId: svc.id,
+                status: 'pending'
+              });
+            }
+          }
+          
+          const fullSub = await api.subscriptions.get(newSub.id);
+          set(state => ({ subscriptions: [...state.subscriptions, fullSub] }));
+        } catch (error) {
+          console.error('Failed to subscribe:', error);
+          throw error;
+        }
+      },
 
-        const newSub: Subscription = {
-          id: Math.random().toString(36).substr(2, 9),
-          userId,
-          planId,
-          status: 'active',
-          startDate: new Date().toISOString(),
-          route: initialRoute
-        };
-        return { subscriptions: [...state.subscriptions, newSub] };
-      }),
+      sendMessage: async (fromId, toId, content) => {
+        try {
+          const newMessage = await api.messages.send({ fromId, toId, content });
+          set(state => ({ messages: [...state.messages, newMessage] }));
+        } catch (error) {
+          console.error('Failed to send message:', error);
+          throw error;
+        }
+      },
 
-      sendMessage: (fromId, toId, content) => set((state) => ({
-        messages: [...state.messages, {
-          id: Math.random().toString(36).substr(2, 9),
-          fromId, toId, content, timestamp: new Date().toISOString()
-        }]
-      })),
+      updateStepStatus: async (subId, stepId, status) => {
+        try {
+          await api.steps.update(stepId, { status });
+          set(state => ({
+            subscriptions: state.subscriptions.map(sub =>
+              sub.id === subId
+                ? { ...sub, route: sub.route.map(s => s.id === stepId ? { ...s, status } : s) }
+                : sub
+            )
+          }));
+        } catch (error) {
+          console.error('Failed to update step status:', error);
+          throw error;
+        }
+      },
 
-      updateStepStatus: (subId, stepId, status) => set((state) => ({
-        subscriptions: state.subscriptions.map(sub => 
-          sub.id === subId 
-            ? { ...sub, route: sub.route.map(s => s.id === stepId ? { ...s, status } : s) }
-            : sub
-        )
-      })),
+      updateStepDate: async (subId, stepId, date) => {
+        try {
+          await api.steps.update(stepId, { date: new Date(date) } as any);
+          set(state => ({
+            subscriptions: state.subscriptions.map(sub =>
+              sub.id === subId
+                ? { ...sub, route: sub.route.map(s => s.id === stepId ? { ...s, date: new Date(date) } : s) }
+                : sub
+            )
+          }));
+        } catch (error) {
+          console.error('Failed to update step date:', error);
+          throw error;
+        }
+      },
 
-      updateStepDate: (subId, stepId, date) => set((state) => ({
-        subscriptions: state.subscriptions.map(sub => 
-          sub.id === subId 
-            ? { ...sub, route: sub.route.map(s => s.id === stepId ? { ...s, date } : s) }
-            : sub
-        )
-      })),
+      updateSubscriptionNotes: async (subId, notes) => {
+        try {
+          await api.subscriptions.update(subId, { doctorNotes: notes });
+          set(state => ({
+            subscriptions: state.subscriptions.map(sub =>
+              sub.id === subId ? { ...sub, doctorNotes: notes } : sub
+            )
+          }));
+        } catch (error) {
+          console.error('Failed to update notes:', error);
+          throw error;
+        }
+      },
 
-      updateSubscriptionNotes: (subId, notes) => set((state) => ({
-        subscriptions: state.subscriptions.map(sub => 
-          sub.id === subId 
-            ? { ...sub, doctorNotes: notes }
-            : sub
-        )
-      })),
+      addStep: async (subId, step) => {
+        try {
+          const newStep = await api.steps.create(subId, step as any);
+          set(state => ({
+            subscriptions: state.subscriptions.map(sub =>
+              sub.id === subId
+                ? { ...sub, route: [...sub.route, newStep] }
+                : sub
+            )
+          }));
+        } catch (error) {
+          console.error('Failed to add step:', error);
+          throw error;
+        }
+      },
 
-      addStep: (subId, step) => set((state) => ({
-        subscriptions: state.subscriptions.map(sub => 
-          sub.id === subId 
-            ? { ...sub, route: [...sub.route, { ...step, id: Math.random().toString(36).substr(2, 9), status: 'pending' }] }
-            : sub
-        )
-      })),
+      removeStep: async (subId, stepId) => {
+        try {
+          await api.steps.delete(stepId);
+          set(state => ({
+            subscriptions: state.subscriptions.map(sub =>
+              sub.id === subId
+                ? { ...sub, route: sub.route.filter(s => s.id !== stepId) }
+                : sub
+            )
+          }));
+        } catch (error) {
+          console.error('Failed to remove step:', error);
+          throw error;
+        }
+      },
 
-      removeStep: (subId, stepId) => set((state) => ({
-        subscriptions: state.subscriptions.map(sub => 
-          sub.id === subId 
-            ? { ...sub, route: sub.route.filter(s => s.id !== stepId) }
-            : sub
-        )
-      })),
+      toggleSubscription: async (subId) => {
+        const sub = get().subscriptions.find(s => s.id === subId);
+        if (!sub) return;
+        const newStatus = sub.status === 'active' ? 'inactive' : 'active';
+        try {
+          await api.subscriptions.update(subId, { status: newStatus });
+          set(state => ({
+            subscriptions: state.subscriptions.map(s =>
+              s.id === subId ? { ...s, status: newStatus } : s
+            )
+          }));
+        } catch (error) {
+          console.error('Failed to toggle subscription:', error);
+          throw error;
+        }
+      },
 
-      toggleSubscription: (subId) => set((state) => ({
-        subscriptions: state.subscriptions.map(sub => 
-          sub.id === subId 
-            ? { ...sub, status: sub.status === 'active' ? 'inactive' : 'active' }
-            : sub
-        )
-      })),
+      updatePlan: async (planId, data) => {
+        try {
+          await api.plans.update(planId, data);
+          set(state => ({
+            plans: state.plans.map(p => p.id === planId ? { ...p, ...data } : p)
+          }));
+        } catch (error) {
+          console.error('Failed to update plan:', error);
+          throw error;
+        }
+      },
 
-      updatePlan: (planId, data) => set((state) => ({
-        plans: state.plans.map(p => p.id === planId ? { ...p, ...data } : p)
-      })),
+      addService: async (serviceData) => {
+        try {
+          const newService = await api.services.create(serviceData as any);
+          set(state => ({ services: [...state.services, newService] }));
+        } catch (error) {
+          console.error('Failed to add service:', error);
+          throw error;
+        }
+      },
 
-      addService: (serviceData) => set((state) => ({
-        services: [...state.services, { ...serviceData, id: Math.random().toString(36).substr(2, 9) }]
-      })),
+      updateService: async (id, data) => {
+        try {
+          await api.services.update(id, data);
+          set(state => ({
+            services: state.services.map(s => s.id === id ? { ...s, ...data } : s)
+          }));
+        } catch (error) {
+          console.error('Failed to update service:', error);
+          throw error;
+        }
+      },
 
-      updateService: (id, data) => set((state) => ({
-        services: state.services.map(s => s.id === id ? { ...s, ...data } : s)
-      })),
-
-      deleteService: (id) => set((state) => ({
-        services: state.services.filter(s => s.id !== id),
-        plans: state.plans.map(p => ({
-          ...p,
-          allowedServiceIds: p.allowedServiceIds.filter(sid => sid !== id)
-        }))
-      })),
+      deleteService: async (id) => {
+        try {
+          await api.services.delete(id);
+          set(state => ({
+            services: state.services.filter(s => s.id !== id),
+            plans: state.plans.map(p => ({
+              ...p,
+              allowedServiceIds: p.allowedServiceIds?.filter(sid => sid !== id) || []
+            }))
+          }));
+        } catch (error) {
+          console.error('Failed to delete service:', error);
+          throw error;
+        }
+      },
     }),
     {
-      name: '1med-storage-v4', // Version bump to force data refresh with new fields
+      name: '1med-storage-v5',
+      partialize: (state) => ({ currentUser: state.currentUser }),
     }
   )
 );

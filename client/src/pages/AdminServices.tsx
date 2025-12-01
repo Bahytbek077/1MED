@@ -1,4 +1,4 @@
-import { useStore, Service, ServiceType } from "@/lib/store";
+import { useStore, type Service, type ServiceType } from "@/lib/store";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,19 +7,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useState } from "react";
-import { Edit2, Trash2, Plus, Stethoscope, TestTube, Activity, Search } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Edit2, Trash2, Plus, Stethoscope, TestTube, Activity, Search, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function AdminServices() {
-  const { services, addService, updateService, deleteService } = useStore();
+  const { services, addService, updateService, deleteService, loadData, isLoading } = useStore();
+  
+  useEffect(() => {
+    loadData();
+  }, []);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [search, setSearch] = useState("");
 
   // Form State
-  const [formData, setFormData] = useState<{ name: string; type: ServiceType }>({ name: '', type: 'consultation' });
+  const [formData, setFormData] = useState<{ name: string; type: string }>({ name: '', type: 'consultation' });
 
   const filteredServices = services.filter(s => 
     s.name.toLowerCase().includes(search.toLowerCase())

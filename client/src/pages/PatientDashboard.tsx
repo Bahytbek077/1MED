@@ -4,13 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle2, Circle, Clock, ArrowRight, MessageSquare, Send } from "lucide-react";
+import { CheckCircle2, Circle, Clock, ArrowRight, MessageSquare, Send, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 
 export default function PatientDashboard() {
-  const { currentUser, plans, subscriptions, subscribe, messages, sendMessage } = useStore();
+  const { currentUser, plans, subscriptions, subscribe, messages, sendMessage, loadData, isLoading } = useStore();
+  
+  useEffect(() => {
+    loadData();
+  }, []);
   const mySub = subscriptions.find(s => s.userId === currentUser?.id && s.status === 'active');
   const myPlan = plans.find(p => p.id === mySub?.planId);
   const myMessages = messages.filter(m => m.fromId === currentUser?.id || m.toId === currentUser?.id)
@@ -19,9 +23,19 @@ export default function PatientDashboard() {
   const [msgInput, setMsgInput] = useState("");
 
   if (!currentUser) return null;
+  
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
-  const handleSubscribe = (planId: string) => {
-    subscribe(currentUser.id, planId);
+  const handleSubscribe = async (planId: string) => {
+    await subscribe(currentUser.id, planId);
   };
 
   const handleSend = (e: React.FormEvent) => {

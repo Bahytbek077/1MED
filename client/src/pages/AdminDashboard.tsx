@@ -7,12 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { useState } from "react";
-import { DollarSign, Users, Activity, Search, TrendingUp, UserMinus, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { DollarSign, Users, Activity, Search, TrendingUp, UserMinus, AlertCircle, Loader2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 export default function AdminDashboard() {
-  const { users, subscriptions, plans, toggleSubscription, updatePlan, messages } = useStore();
+  const { users, subscriptions, plans, toggleSubscription, updatePlan, messages, loadData, isLoading } = useStore();
+  
+  useEffect(() => {
+    loadData();
+  }, []);
   const [search, setSearch] = useState("");
 
   const patientSubs = subscriptions.map(sub => ({
@@ -60,6 +64,16 @@ export default function AdminDashboard() {
   );
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

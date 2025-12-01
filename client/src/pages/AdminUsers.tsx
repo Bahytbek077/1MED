@@ -1,4 +1,4 @@
-import { useStore, User, Role } from "@/lib/store";
+import { useStore, type User, type Role } from "@/lib/store";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,11 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
-import { Search, Plus, Edit2, Trash2, Key } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Plus, Edit2, Trash2, Key, Loader2 } from "lucide-react";
 
 export default function AdminUsers() {
-  const { users, addUser, updateUser, deleteUser } = useStore();
+  const { users, addUser, updateUser, deleteUser, loadData, isLoading } = useStore();
+  
+  useEffect(() => {
+    loadData();
+  }, []);
   const [search, setSearch] = useState("");
   
   // Dialog States
@@ -21,7 +25,7 @@ export default function AdminUsers() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   // Form States
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'patient' as Role });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'patient' });
 
   const filteredUsers = users.filter(u => 
     u.name.toLowerCase().includes(search.toLowerCase()) || 

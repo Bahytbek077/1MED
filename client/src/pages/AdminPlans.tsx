@@ -1,4 +1,4 @@
-import { useStore, Plan, Service } from "@/lib/store";
+import { useStore, type Plan, type Service } from "@/lib/store";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,12 +8,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useState } from "react";
-import { Edit2, CheckCircle2, Stethoscope, TestTube, Activity } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Edit2, CheckCircle2, Stethoscope, TestTube, Activity, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function AdminPlans() {
-  const { plans, services, updatePlan } = useStore();
+  const { plans, services, updatePlan, loadData, isLoading } = useStore();
+  
+  useEffect(() => {
+    loadData();
+  }, []);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
 
@@ -56,6 +60,16 @@ export default function AdminPlans() {
       default: return <Activity className="h-4 w-4" />;
     }
   };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

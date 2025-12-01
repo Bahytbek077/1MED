@@ -1,4 +1,4 @@
-import { useStore, User, Subscription } from "@/lib/store";
+import { useStore, type User, type Subscription } from "@/lib/store";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,8 @@ import {
   Calendar as CalendarIcon,
   UserCog,
   Save,
-  FileText
+  FileText,
+  Loader2
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -29,7 +30,11 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
 export default function DoctorDashboard() {
-  const { users, subscriptions, plans, services, updateStepStatus, addStep, removeStep, messages, sendMessage, currentUser, updateUser, updateStepDate, updateSubscriptionNotes } = useStore();
+  const { users, subscriptions, plans, services, updateStepStatus, addStep, removeStep, messages, sendMessage, currentUser, updateUser, updateStepDate, updateSubscriptionNotes, loadData, isLoading } = useStore();
+  
+  useEffect(() => {
+    loadData();
+  }, []);
   const [selectedSubId, setSelectedSubId] = useState<string | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<string>("");
   const [customTitle, setCustomTitle] = useState(""); 
@@ -114,6 +119,16 @@ export default function DoctorDashboard() {
       default: return type;
     }
   };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
