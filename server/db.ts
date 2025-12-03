@@ -12,11 +12,25 @@ function initializeDatabase() {
   if (dbInitialized) return;
   dbInitialized = true;
 
-  const connectionString = process.env.DATABASE_URL;
+  let connectionString = process.env.DATABASE_URL;
+  
+  // If DATABASE_URL contains unreachable host, try to build from PG* variables
+  if (!connectionString || connectionString.includes('supabase.co')) {
+    const pgHost = process.env.PGHOST;
+    const pgDatabase = process.env.PGDATABASE;
+    const pgUser = process.env.PGUSER;
+    const pgPassword = process.env.PGPASSWORD;
+    const pgPort = process.env.PGPORT || '5432';
+    
+    if (pgHost && pgDatabase && pgUser && pgPassword) {
+      connectionString = `postgresql://${pgUser}:${pgPassword}@${pgHost}:${pgPort}/${pgDatabase}?sslmode=require`;
+      console.log('Using Replit PostgreSQL connection');
+    }
+  }
   
   if (!connectionString) {
-    dbError = "DATABASE_URL is not set";
-    console.error("Warning: DATABASE_URL must be set for database functionality");
+    dbError = "DATABASE_URL is not set and PG* variables are missing";
+    console.error("Warning: Database connection not configured");
     return;
   }
 
