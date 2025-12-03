@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   experience: integer("experience"),
   phone: text("phone"),
   bio: text("bio"),
+  doctorId: varchar("doctor_id", { length: 36 }),
 });
 
 export const services = pgTable("services", {

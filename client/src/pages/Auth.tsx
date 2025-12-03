@@ -242,35 +242,41 @@ function LoginForm({ email, setEmail, password, setPassword, handleLogin }: {
     handleLogin: (e: React.FormEvent) => void
 }) {
     return (
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
             <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="login-email">Email</Label>
                 <Input 
-                id="email" 
+                id="login-email" 
+                name="login-email"
                 placeholder="Введите e-mail"
                 type="email" 
                 required 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="bg-white/50"
+                autoComplete="off"
+                data-testid="input-login-email"
                 />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="password">Пароль</Label>
+                <Label htmlFor="login-password">Пароль</Label>
                 <div className="relative">
                     <Lock className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
-                        id="password" 
+                        id="login-password" 
+                        name="login-password"
                         placeholder="Введите пароль" 
                         type="password" 
                         required 
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="bg-white/50 pl-8"
+                        autoComplete="new-password"
+                        data-testid="input-login-password"
                     />
                 </div>
             </div>
-            <Button type="submit" className="w-full text-lg h-11">Войти</Button>
+            <Button type="submit" className="w-full text-lg h-11" data-testid="button-login">Войти</Button>
         </form>
     );
 }
