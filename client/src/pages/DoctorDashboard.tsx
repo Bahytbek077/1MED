@@ -56,7 +56,8 @@ export default function DoctorDashboard() {
     }
   }, [currentUser]);
 
-  const activeSubs = subscriptions.filter(s => s.status === 'active');
+  const myPatientIds = users.filter(u => u.role === 'patient' && u.doctorId === currentUser?.id).map(u => u.id);
+  const activeSubs = subscriptions.filter(s => s.status === 'active' && myPatientIds.includes(s.userId));
 
   const getPlanName = (id: string) => plans.find(p => p.id === id)?.name || 'Неизвестно';
 

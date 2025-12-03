@@ -10,7 +10,8 @@ import {
   Activity,
   MessageSquare,
   FileText,
-  ListPlus
+  ListPlus,
+  UserPlus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
@@ -48,6 +49,7 @@ export default function Layout({ children }: LayoutProps) {
       case 'admin':
         return [
           { icon: LayoutDashboard, label: "Обзор", path: "/admin/dashboard" },
+          { icon: UserPlus, label: "Назначения", path: "/admin/assignments" },
           { icon: FileText, label: "Тарифы", path: "/admin/plans" },
           { icon: ListPlus, label: "Услуги", path: "/admin/services" },
           { icon: Users, label: "Пользователи", path: "/admin/users" },
@@ -57,7 +59,7 @@ export default function Layout({ children }: LayoutProps) {
     }
   };
 
-  const navItems = getNavItems(currentUser.role);
+  const navItems = getNavItems(currentUser.role as Role);
 
   return (
     <div className="min-h-screen bg-muted/30 flex">

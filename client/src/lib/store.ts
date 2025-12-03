@@ -24,6 +24,7 @@ interface StoreState {
   addUser: (user: { name: string; email: string; password: string; role: string }) => Promise<void>;
   updateUser: (id: string, data: Partial<User>) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
+  assignDoctorToPatient: (patientId: string, doctorId: string | null) => Promise<void>;
 
   subscribe: (userId: string, planId: string) => Promise<void>;
   sendMessage: (fromId: string, toId: string, content: string) => Promise<void>;
@@ -127,6 +128,19 @@ export const useStore = create<StoreState>()(
           }));
         } catch (error) {
           console.error('Failed to delete user:', error);
+          throw error;
+        }
+      },
+
+      assignDoctorToPatient: async (patientId, doctorId) => {
+        try {
+          const updatedUser = await api.users.update(patientId, { doctorId });
+          set(state => ({
+            users: state.users.map(u => u.id === patientId ? updatedUser : u),
+            currentUser: state.currentUser?.id === patientId ? updatedUser : state.currentUser
+          }));
+        } catch (error) {
+          console.error('Failed to assign doctor:', error);
           throw error;
         }
       },

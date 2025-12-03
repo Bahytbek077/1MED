@@ -4,21 +4,27 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle2, Circle, Clock, ArrowRight, MessageSquare, Send, Loader2 } from "lucide-react";
+import { CheckCircle2, Circle, Clock, ArrowRight, MessageSquare, Send, Loader2, UserCircle, Phone, Mail, Stethoscope } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function PatientDashboard() {
-  const { currentUser, plans, subscriptions, subscribe, messages, sendMessage, loadData, isLoading } = useStore();
+  const { currentUser, users, plans, subscriptions, subscribe, messages, sendMessage, loadData, isLoading } = useStore();
   
   useEffect(() => {
     loadData();
   }, []);
   const mySub = subscriptions.find(s => s.userId === currentUser?.id && s.status === 'active');
   const myPlan = plans.find(p => p.id === mySub?.planId);
-  const myMessages = messages.filter(m => m.fromId === currentUser?.id || m.toId === currentUser?.id)
-    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  
+  const myDoctor = users.find(u => u.id === currentUser?.doctorId && u.role === 'doctor');
+  
+  const myMessages = messages.filter(m => 
+    (m.fromId === currentUser?.id && m.toId === myDoctor?.id) || 
+    (m.toId === currentUser?.id && m.fromId === myDoctor?.id)
+  ).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   const [msgInput, setMsgInput] = useState("");
 
@@ -40,9 +46,8 @@ export default function PatientDashboard() {
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!msgInput.trim()) return;
-    // Hardcoded to send to the first doctor for MVP
-    sendMessage(currentUser.id, '1', msgInput);
+    if (!msgInput.trim() || !myDoctor) return;
+    sendMessage(currentUser.id, myDoctor.id, msgInput);
     setMsgInput("");
   };
 
@@ -156,13 +161,59 @@ export default function PatientDashboard() {
           </Card>
         </div>
 
-        {/* Right Column: Chat */}
-        <div className="lg:col-span-1 h-[calc(100vh-8rem)] sticky top-24">
-          <Card className="h-full flex flex-col shadow-lg border-primary/10">
+        {/* Right Column: Doctor Info + Chat */}
+        <div className="lg:col-span-1 space-y-4">
+          {/* Doctor Info Card */}
+          {myDoctor ? (
+            <Card className="shadow-md border-primary/10" data-testid="card-doctor-info">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Stethoscope className="h-5 w-5 text-primary" />
+                  Ваш лечащий врач
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex items-start gap-4">
+                <Avatar className="h-16 w-16 border-2 border-primary/20">
+                  <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                    {myDoctor.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-lg" data-testid="text-doctor-name">{myDoctor.name}</h3>
+                  {myDoctor.specialization && (
+                    <p className="text-sm text-primary font-medium" data-testid="text-doctor-specialization">{myDoctor.specialization}</p>
+                  )}
+                  {myDoctor.phone && (
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Phone className="h-3.5 w-3.5" />
+                      <span data-testid="text-doctor-phone">{myDoctor.phone}</span>
+                    </div>
+                  )}
+                  {myDoctor.email && (
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Mail className="h-3.5 w-3.5" />
+                      <span data-testid="text-doctor-email">{myDoctor.email}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="shadow-md border-dashed border-2">
+              <CardContent className="py-6 text-center text-muted-foreground">
+                <UserCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>Врач пока не назначен</p>
+                <p className="text-xs mt-1">Администратор назначит вам врача в ближайшее время</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Chat Card */}
+          <Card className="h-[calc(100vh-20rem)] flex flex-col shadow-lg border-primary/10">
             <CardHeader className="bg-primary/5 pb-4">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <MessageSquare className="h-5 w-5 text-primary" />
-                Чат с врачом
+                {myDoctor ? `Чат с ${myDoctor.name.split(' ')[0]}` : 'Чат с врачом'}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 p-0">

@@ -11,6 +11,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import AdminUsers from "@/pages/AdminUsers";
 import AdminPlans from "@/pages/AdminPlans";
 import AdminServices from "@/pages/AdminServices";
+import AdminAssignments from "@/pages/AdminAssignments";
 
 function Router() {
   return (
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/admin/plans" component={AdminPlans} />
       <Route path="/admin/services" component={AdminServices} />
       <Route path="/admin/users" component={AdminUsers} />
+      <Route path="/admin/assignments" component={AdminAssignments} />
       <Route component={NotFound} />
     </Switch>
   );
