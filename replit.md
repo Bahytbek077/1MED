@@ -106,6 +106,10 @@ Preferred communication style: Simple, everyday language.
 - Replit-specific plugins: cartographer, dev-banner, runtime-error-modal
 
 **Deployment:**
-- Vercel deployment configuration with rewrites for SPA routing
-- Build outputs to `public` directory
-- Excludes API routes from SPA fallback using explicit rewrite rules
+- Replit autoscale deployment with build and run commands
+- Build outputs to `public` directory, then copied to `client/public` for production server
+- Production server (server/vite.ts) looks for static files in `client/public/`
+- Server bundle (dist/index.js) built with esbuild
+- **Important**: After building, files must be copied from `public/` to `client/public/` for production
+- Command to rebuild: `npm run build` then `cp -r public client/public`
+- Doctor-patient assignment via `doctorId` field in users table
