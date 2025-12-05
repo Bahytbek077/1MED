@@ -28,6 +28,7 @@ export default function PatientDashboard() {
   ).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   const [msgInput, setMsgInput] = useState("");
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   if (!currentUser) return null;
   
@@ -130,8 +131,6 @@ export default function PatientDashboard() {
     ? Math.max(0, differenceInDays(new Date(mySub.endDate), new Date()))
     : (myPlan?.trialDays || 10);
   const isTrialExpired = isTrialPlan && trialDaysLeft <= 0;
-
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const handleUpgrade = async (planId: string) => {
     await subscribe(currentUser.id, planId);
