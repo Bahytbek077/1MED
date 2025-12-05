@@ -226,7 +226,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/subscriptions", async (req, res) => {
     try {
       const parsed = insertSubscriptionSchema.parse(req.body);
-      const subscription = await storage.createSubscription(parsed);
+      
+      // Check if this is a trial plan and set endDate accordingly
+      const plan = await storage.getPlan(parsed.planId);
+      let endDate: Date | undefined;
+      if (plan && plan.isTrial === 1 && plan.trialDays) {
+        endDate = new Date();
+        endDate.setDate(endDate.getDate() + plan.trialDays);
+      }
+      
+      const subscription = await storage.createSubscription({ ...parsed, endDate });
       res.json(subscription);
     } catch (error) {
       if (error instanceof z.ZodError) {

@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle2, Circle, Clock, ArrowRight, MessageSquare, Send, Loader2, UserCircle, Phone, Mail, Stethoscope } from "lucide-react";
+import { CheckCircle2, Circle, Clock, ArrowRight, MessageSquare, Send, Loader2, UserCircle, Phone, Mail, Stethoscope, Gift, Calendar, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { differenceInDays } from "date-fns";
 
 export default function PatientDashboard() {
   const { currentUser, users, plans, subscriptions, subscribe, messages, sendMessage, loadData, isLoading } = useStore();
@@ -51,17 +52,48 @@ export default function PatientDashboard() {
     setMsgInput("");
   };
 
+  const demoPlan = plans.find(p => p.isTrial === 1);
+  const paidPlans = plans.filter(p => p.isTrial !== 1);
+
   if (!mySub) {
     return (
       <Layout>
-        <div className="space-y-6">
+        <div className="space-y-8">
+          {/* Demo Banner */}
+          {demoPlan && (
+            <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/30 shadow-lg" data-testid="card-demo-banner">
+              <CardContent className="py-8">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Gift className="h-8 w-8 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-primary">Попробуйте бесплатно!</h2>
+                      <p className="text-muted-foreground">10 дней демо-доступа с чатом терапевта</p>
+                    </div>
+                  </div>
+                  <Button 
+                    size="lg" 
+                    className="gap-2 px-8" 
+                    onClick={() => handleSubscribe(demoPlan.id)}
+                    data-testid="button-start-demo"
+                  >
+                    <Sparkles className="h-5 w-5" />
+                    Попробовать демо-версию
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="text-center space-y-2">
             <h1 className="text-3xl font-bold text-primary">Выберите ваш тариф</h1>
-            <p className="text-muted-foreground">Выберите подписку, чтобы начать заботиться о здоровье</p>
+            <p className="text-muted-foreground">Или оформите подписку прямо сейчас</p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-6">
-            {plans.map(plan => (
+            {paidPlans.map(plan => (
               <Card key={plan.id} className="relative hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20 flex flex-col">
                 <CardHeader>
                   <CardTitle className="text-2xl text-primary">{plan.name}</CardTitle>
@@ -93,6 +125,19 @@ export default function PatientDashboard() {
     );
   }
 
+  const isTrialPlan = myPlan?.isTrial === 1;
+  const trialDaysLeft = mySub.endDate 
+    ? Math.max(0, differenceInDays(new Date(mySub.endDate), new Date()))
+    : (myPlan?.trialDays || 10);
+  const isTrialExpired = isTrialPlan && trialDaysLeft <= 0;
+
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  const handleUpgrade = async (planId: string) => {
+    await subscribe(currentUser.id, planId);
+    setShowUpgradeModal(false);
+  };
+
   const getStatusLabel = (status: string) => {
     switch(status) {
       case 'active': return 'Активна';
@@ -113,18 +158,103 @@ export default function PatientDashboard() {
 
   return (
     <Layout>
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Left Column: Journey */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-primary">Ваш маршрут здоровья</h1>
-              <p className="text-muted-foreground">Тариф: {myPlan?.name}</p>
+      <div className="space-y-6">
+        {/* Trial Status Banner */}
+        {isTrialPlan && (
+          <Card className={cn(
+            "border-2",
+            isTrialExpired 
+              ? "bg-red-50 border-red-200" 
+              : "bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200"
+          )} data-testid="card-trial-status">
+            <CardContent className="py-4">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "h-12 w-12 rounded-full flex items-center justify-center",
+                    isTrialExpired ? "bg-red-100" : "bg-amber-100"
+                  )}>
+                    <Calendar className={cn("h-6 w-6", isTrialExpired ? "text-red-600" : "text-amber-600")} />
+                  </div>
+                  <div>
+                    {isTrialExpired ? (
+                      <>
+                        <h3 className="font-semibold text-red-700">Пробный период закончился</h3>
+                        <p className="text-sm text-red-600">Оформите подписку, чтобы продолжить пользоваться сервисом</p>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="font-semibold text-amber-700">Демо-версия: осталось {trialDaysLeft} дней</h3>
+                        <p className="text-sm text-amber-600">Оформите подписку для полного доступа ко всем функциям</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <Button 
+                  variant={isTrialExpired ? "destructive" : "default"}
+                  className="gap-2"
+                  onClick={() => setShowUpgradeModal(true)}
+                  data-testid="button-upgrade"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                  Перейти на подписку
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Upgrade Modal */}
+        {showUpgradeModal && (
+          <Card className="border-2 border-primary/30 shadow-xl">
+            <CardHeader>
+              <CardTitle className="text-xl text-primary">Выберите тариф</CardTitle>
+              <CardDescription>Ваша история чата и данные сохранятся при переходе</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-4">
+                {paidPlans.map(plan => (
+                  <Card key={plan.id} className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-primary/50" onClick={() => handleUpgrade(plan.id)}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">{plan.name}</CardTitle>
+                      <CardDescription className="font-semibold text-primary">
+                        {plan.price.toLocaleString()} ₸ / год
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <ul className="space-y-1 text-sm">
+                        {plan.features.slice(0, 3).map((f, i) => (
+                          <li key={i} className="flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3 text-green-500" />
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              <div className="mt-4 text-center">
+                <Button variant="ghost" onClick={() => setShowUpgradeModal(false)}>
+                  Отмена
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column: Journey */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-primary">Ваш маршрут здоровья</h1>
+                <p className="text-muted-foreground">Тариф: {myPlan?.name}</p>
+              </div>
+              <Badge variant={mySub.status === 'active' ? 'default' : 'secondary'} className="text-base px-4 py-1">
+                {getStatusLabel(mySub.status)}
+              </Badge>
             </div>
-            <Badge variant={mySub.status === 'active' ? 'default' : 'secondary'} className="text-base px-4 py-1">
-              {getStatusLabel(mySub.status)}
-            </Badge>
-          </div>
 
           <Card className="border-none shadow-md bg-white/50 backdrop-blur">
             <CardContent className="pt-6">
@@ -259,6 +389,7 @@ export default function PatientDashboard() {
               </form>
             </CardFooter>
           </Card>
+        </div>
         </div>
       </div>
     </Layout>

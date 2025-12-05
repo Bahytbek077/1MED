@@ -30,6 +30,8 @@ export const plans = pgTable("plans", {
   description: text("description").notNull(),
   features: text("features").array().notNull().default(sql`ARRAY[]::text[]`),
   allowedServiceIds: text("allowed_service_ids").array().notNull().default(sql`ARRAY[]::text[]`),
+  isTrial: integer("is_trial").notNull().default(0),
+  trialDays: integer("trial_days"),
 });
 
 export const subscriptions = pgTable("subscriptions", {
@@ -38,6 +40,7 @@ export const subscriptions = pgTable("subscriptions", {
   planId: varchar("plan_id", { length: 36 }).notNull().references(() => plans.id),
   status: text("status").notNull().default('active'),
   startDate: timestamp("start_date").notNull().defaultNow(),
+  endDate: timestamp("end_date"),
   doctorNotes: text("doctor_notes"),
 });
 
@@ -64,7 +67,9 @@ export const messages = pgTable("messages", {
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true });
 export const insertPlanSchema = createInsertSchema(plans).omit({ id: true });
-export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({ id: true, startDate: true });
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({ id: true, startDate: true }).extend({
+  endDate: z.date().optional(),
+});
 export const insertStepSchema = createInsertSchema(steps).omit({ id: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, timestamp: true });
 

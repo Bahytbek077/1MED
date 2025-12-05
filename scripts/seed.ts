@@ -54,6 +54,16 @@ async function seed() {
 
   const seedPlans = [
     { 
+      id: 'demo', 
+      name: 'Демо-версия', 
+      price: 0, 
+      description: 'Попробуйте сервис бесплатно 10 дней',
+      features: ['Чат с терапевтом', '10 дней бесплатно'],
+      allowedServiceIds: ['svc_therapist'],
+      isTrial: 1,
+      trialDays: 10
+    },
+    { 
       id: 'basic', 
       name: 'Базовый Чекап', 
       price: 14500, 

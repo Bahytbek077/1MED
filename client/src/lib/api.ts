@@ -9,6 +9,7 @@ export interface SubscriptionWithSteps {
   planId: string;
   status: string;
   startDate: string;
+  endDate: string | null;
   doctorNotes: string | null;
   route: Step[];
 }
