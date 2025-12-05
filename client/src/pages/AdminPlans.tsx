@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState, useEffect } from "react";
-import { Edit2, CheckCircle2, Stethoscope, TestTube, Activity, Loader2 } from "lucide-react";
+import { Edit2, CheckCircle2, Stethoscope, TestTube, Activity, Loader2, Eye, EyeOff } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 
 export default function AdminPlans() {
@@ -81,11 +82,16 @@ export default function AdminPlans() {
 
         <div className="grid md:grid-cols-3 gap-6">
           {plans.map(plan => (
-            <Card key={plan.id} className="flex flex-col h-full hover:shadow-lg transition-all">
+            <Card key={plan.id} className={`flex flex-col h-full hover:shadow-lg transition-all ${plan.isAvailable !== 1 ? 'opacity-60 border-dashed' : ''}`}>
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="text-xl">{plan.name}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-xl">{plan.name}</CardTitle>
+                      {plan.isTrial === 1 && (
+                        <Badge variant="outline" className="text-xs">Демо</Badge>
+                      )}
+                    </div>
                     <CardDescription className="mt-1 font-bold text-primary text-lg">
                       {plan.price.toLocaleString()} ₸
                     </CardDescription>
@@ -97,6 +103,24 @@ export default function AdminPlans() {
               </CardHeader>
               <CardContent className="flex-1 space-y-4">
                 <p className="text-sm text-muted-foreground">{plan.description}</p>
+                
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    {plan.isAvailable === 1 ? (
+                      <Eye className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <span className="text-sm font-medium">
+                      {plan.isAvailable === 1 ? 'Доступен' : 'Скрыт'}
+                    </span>
+                  </div>
+                  <Switch 
+                    checked={plan.isAvailable === 1}
+                    onCheckedChange={(checked) => updatePlan(plan.id, { isAvailable: checked ? 1 : 0 })}
+                    data-testid={`switch-availability-${plan.id}`}
+                  />
+                </div>
                 
                 <div>
                   <h4 className="text-sm font-semibold mb-2">Доступные услуги:</h4>
