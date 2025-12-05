@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle2, Circle, Clock, ArrowRight, MessageSquare, Send, Loader2, UserCircle, Phone, Mail, Stethoscope, Gift, Calendar, Sparkles } from "lucide-react";
+import { CheckCircle2, Circle, Clock, ArrowRight, MessageSquare, Send, Loader2, UserCircle, Phone, Mail, Stethoscope, Gift, Calendar, Sparkles, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -94,32 +94,59 @@ export default function PatientDashboard() {
           </div>
           
           <div className="grid md:grid-cols-3 gap-6">
-            {paidPlans.map(plan => (
-              <Card key={plan.id} className="relative hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20 flex flex-col">
-                <CardHeader>
-                  <CardTitle className="text-2xl text-primary">{plan.name}</CardTitle>
-                  <CardDescription className="text-lg font-semibold mt-2">
-                    {plan.price.toLocaleString()} ₸ / год
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4 flex-1">
-                  <p className="text-sm text-muted-foreground">{plan.description}</p>
-                  <ul className="space-y-2">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm">
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full" size="lg" onClick={() => handleSubscribe(plan.id)}>
-                    Выбрать
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+            {paidPlans.map(plan => {
+              const isAvailable = plan.isAvailable === 1;
+              return (
+                <Card 
+                  key={plan.id} 
+                  className={cn(
+                    "relative transition-all duration-300 border-2 flex flex-col",
+                    isAvailable 
+                      ? "hover:shadow-xl hover:border-primary/20" 
+                      : "opacity-60 bg-muted/30"
+                  )}
+                >
+                  {!isAvailable && (
+                    <div className="absolute top-3 right-3">
+                      <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                        <Lock className="h-3 w-3 mr-1" />
+                        Недоступен
+                      </Badge>
+                    </div>
+                  )}
+                  <CardHeader>
+                    <CardTitle className={cn("text-2xl", isAvailable ? "text-primary" : "text-muted-foreground")}>
+                      {plan.name}
+                    </CardTitle>
+                    <CardDescription className="text-lg font-semibold mt-2">
+                      {plan.price.toLocaleString()} ₸ / год
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4 flex-1">
+                    <p className="text-sm text-muted-foreground">{plan.description}</p>
+                    <ul className="space-y-2">
+                      {plan.features.map((feature, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm">
+                          <CheckCircle2 className={cn("h-4 w-4", isAvailable ? "text-green-500" : "text-muted-foreground")} />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      className="w-full" 
+                      size="lg" 
+                      onClick={() => handleSubscribe(plan.id)}
+                      disabled={!isAvailable}
+                      variant={isAvailable ? "default" : "secondary"}
+                    >
+                      {isAvailable ? "Выбрать" : "Недоступен"}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </Layout>
@@ -212,26 +239,46 @@ export default function PatientDashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 gap-4">
-                {paidPlans.map(plan => (
-                  <Card key={plan.id} className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-primary/50" onClick={() => handleUpgrade(plan.id)}>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">{plan.name}</CardTitle>
-                      <CardDescription className="font-semibold text-primary">
-                        {plan.price.toLocaleString()} ₸ / год
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <ul className="space-y-1 text-sm">
-                        {plan.features.slice(0, 3).map((f, i) => (
-                          <li key={i} className="flex items-center gap-1">
-                            <CheckCircle2 className="h-3 w-3 text-green-500" />
-                            {f}
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                ))}
+                {paidPlans.map(plan => {
+                  const isAvailable = plan.isAvailable === 1;
+                  return (
+                    <Card 
+                      key={plan.id} 
+                      className={cn(
+                        "transition-shadow border-2 relative",
+                        isAvailable 
+                          ? "hover:shadow-lg cursor-pointer hover:border-primary/50" 
+                          : "opacity-50 bg-muted/30"
+                      )}
+                      onClick={() => isAvailable && handleUpgrade(plan.id)}
+                    >
+                      {!isAvailable && (
+                        <div className="absolute top-2 right-2">
+                          <Badge variant="secondary" className="text-xs">
+                            <Lock className="h-3 w-3 mr-1" />
+                            Недоступен
+                          </Badge>
+                        </div>
+                      )}
+                      <CardHeader className="pb-2">
+                        <CardTitle className={cn("text-lg", !isAvailable && "text-muted-foreground")}>{plan.name}</CardTitle>
+                        <CardDescription className="font-semibold text-primary">
+                          {plan.price.toLocaleString()} ₸ / год
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <ul className="space-y-1 text-sm">
+                          {plan.features.slice(0, 3).map((f, i) => (
+                            <li key={i} className="flex items-center gap-1">
+                              <CheckCircle2 className={cn("h-3 w-3", isAvailable ? "text-green-500" : "text-muted-foreground")} />
+                              {f}
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
               <div className="mt-4 text-center">
                 <Button variant="ghost" onClick={() => setShowUpgradeModal(false)}>
