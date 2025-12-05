@@ -32,6 +32,7 @@ export const plans = pgTable("plans", {
   allowedServiceIds: text("allowed_service_ids").array().notNull().default(sql`ARRAY[]::text[]`),
   isTrial: integer("is_trial").notNull().default(0),
   trialDays: integer("trial_days"),
+  isAvailable: integer("is_available").notNull().default(1),
 });
 
 export const subscriptions = pgTable("subscriptions", {
