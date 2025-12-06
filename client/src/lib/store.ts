@@ -147,6 +147,12 @@ export const useStore = create<StoreState>()(
 
       subscribe: async (userId, planId) => {
         try {
+          const existingActiveSub = get().subscriptions.find(s => s.userId === userId && s.status === 'active');
+          
+          if (existingActiveSub) {
+            await api.subscriptions.update(existingActiveSub.id, { status: 'inactive' });
+          }
+          
           const newSub = await api.subscriptions.create({ userId, planId, status: 'active' });
           const plan = get().plans.find(p => p.id === planId);
           const services = get().services;
@@ -166,7 +172,11 @@ export const useStore = create<StoreState>()(
           }
           
           const fullSub = await api.subscriptions.get(newSub.id);
-          set(state => ({ subscriptions: [...state.subscriptions, fullSub] }));
+          set(state => ({ 
+            subscriptions: state.subscriptions
+              .map(s => s.id === existingActiveSub?.id ? { ...s, status: 'inactive' } : s)
+              .concat([fullSub])
+          }));
         } catch (error) {
           console.error('Failed to subscribe:', error);
           throw error;
