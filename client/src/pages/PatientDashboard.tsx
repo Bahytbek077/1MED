@@ -95,7 +95,7 @@ export default function PatientDashboard() {
           
           <div className="grid md:grid-cols-3 gap-6">
             {paidPlans.map(plan => {
-              const isAvailable = plan.isAvailable === 1;
+              const isAvailable = plan.isAvailable !== 0;
               return (
                 <Card 
                   key={plan.id} 
@@ -240,7 +240,7 @@ export default function PatientDashboard() {
             <CardContent>
               <div className="grid md:grid-cols-3 gap-4">
                 {paidPlans.map(plan => {
-                  const isAvailable = plan.isAvailable === 1;
+                  const isAvailable = plan.isAvailable !== 0;
                   return (
                     <Card 
                       key={plan.id} 
@@ -248,9 +248,13 @@ export default function PatientDashboard() {
                         "transition-shadow border-2 relative",
                         isAvailable 
                           ? "hover:shadow-lg cursor-pointer hover:border-primary/50" 
-                          : "opacity-50 bg-muted/30"
+                          : "opacity-50 bg-muted/30 cursor-not-allowed"
                       )}
-                      onClick={() => isAvailable && handleUpgrade(plan.id)}
+                      onClick={() => {
+                        if (isAvailable) {
+                          handleUpgrade(plan.id);
+                        }
+                      }}
                     >
                       {!isAvailable && (
                         <div className="absolute top-2 right-2">
