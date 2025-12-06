@@ -245,16 +245,11 @@ export default function PatientDashboard() {
                     <Card 
                       key={plan.id} 
                       className={cn(
-                        "transition-shadow border-2 relative",
+                        "transition-shadow border-2 relative flex flex-col",
                         isAvailable 
-                          ? "hover:shadow-lg cursor-pointer hover:border-primary/50" 
-                          : "opacity-50 bg-muted/30 cursor-not-allowed"
+                          ? "hover:shadow-lg hover:border-primary/50" 
+                          : "opacity-50 bg-muted/30"
                       )}
-                      onClick={() => {
-                        if (isAvailable) {
-                          handleUpgrade(plan.id);
-                        }
-                      }}
                     >
                       {!isAvailable && (
                         <div className="absolute top-2 right-2">
@@ -270,7 +265,7 @@ export default function PatientDashboard() {
                           {plan.price.toLocaleString()} ₸ / год
                         </CardDescription>
                       </CardHeader>
-                      <CardContent className="pt-0">
+                      <CardContent className="pt-0 flex-1">
                         <ul className="space-y-1 text-sm">
                           {plan.features.slice(0, 3).map((f, i) => (
                             <li key={i} className="flex items-center gap-1">
@@ -280,6 +275,17 @@ export default function PatientDashboard() {
                           ))}
                         </ul>
                       </CardContent>
+                      <CardFooter>
+                        <Button 
+                          className="w-full" 
+                          onClick={() => handleUpgrade(plan.id)}
+                          disabled={!isAvailable}
+                          variant={isAvailable ? "default" : "secondary"}
+                          data-testid={`button-upgrade-${plan.id}`}
+                        >
+                          {isAvailable ? "Выбрать" : "Недоступен"}
+                        </Button>
+                      </CardFooter>
                     </Card>
                   );
                 })}
