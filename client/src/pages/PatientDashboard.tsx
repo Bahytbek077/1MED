@@ -4,12 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle2, Circle, Clock, ArrowRight, MessageSquare, Send, Loader2, UserCircle, Phone, Mail, Stethoscope, Gift, Calendar, Sparkles, Lock } from "lucide-react";
+import { CheckCircle2, Circle, Clock, ArrowRight, MessageSquare, Send, Loader2, UserCircle, Phone, Mail, Stethoscope, Gift, Calendar, Sparkles, Lock, Bot, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { differenceInDays } from "date-fns";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+interface AgentMessage {
+  id: string;
+  content: string;
+  isUser: boolean;
+  severity?: 'low_risk' | 'high_risk';
+  timestamp: Date;
+}
 
 export default function PatientDashboard() {
   const { currentUser, users, plans, subscriptions, subscribe, messages, sendMessage, loadData, isLoading } = useStore();
@@ -29,6 +38,63 @@ export default function PatientDashboard() {
 
   const [msgInput, setMsgInput] = useState("");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([]);
+  const [isAgentTyping, setIsAgentTyping] = useState(false);
+  const [lastHighRisk, setLastHighRisk] = useState(false);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  const sendToAgent = async (text: string) => {
+    if (!text.trim() || !currentUser) return;
+    
+    const userMsg: AgentMessage = {
+      id: Date.now().toString(),
+      content: text,
+      isUser: true,
+      timestamp: new Date()
+    };
+    setAgentMessages(prev => [...prev, userMsg]);
+    setIsAgentTyping(true);
+    setLastHighRisk(false);
+
+    try {
+      const response = await fetch('/api/agent/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, userId: currentUser.id })
+      });
+      
+      const data = await response.json();
+      
+      const agentReply: AgentMessage = {
+        id: (Date.now() + 1).toString(),
+        content: data.reply,
+        isUser: false,
+        severity: data.severity,
+        timestamp: new Date()
+      };
+      setAgentMessages(prev => [...prev, agentReply]);
+      
+      if (data.severity === 'high_risk') {
+        setLastHighRisk(true);
+      }
+    } catch (error) {
+      const errorMsg: AgentMessage = {
+        id: (Date.now() + 1).toString(),
+        content: 'Извините, произошла ошибка. Попробуйте позже.',
+        isUser: false,
+        timestamp: new Date()
+      };
+      setAgentMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsAgentTyping(false);
+    }
+  };
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [agentMessages, isAgentTyping]);
 
   if (!currentUser) return null;
   
@@ -48,8 +114,13 @@ export default function PatientDashboard() {
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!msgInput.trim() || !myDoctor) return;
-    sendMessage(currentUser.id, myDoctor.id, msgInput);
+    if (!msgInput.trim()) return;
+    
+    if (myDoctor) {
+      sendMessage(currentUser.id, myDoctor.id, msgInput);
+    } else {
+      sendToAgent(msgInput);
+    }
     setMsgInput("");
   };
 
@@ -398,48 +469,117 @@ export default function PatientDashboard() {
           <Card className="h-[calc(100vh-20rem)] flex flex-col shadow-lg border-primary/10">
             <CardHeader className="bg-primary/5 pb-4">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <MessageSquare className="h-5 w-5 text-primary" />
-                {myDoctor ? `Чат с ${myDoctor.name.split(' ')[0]}` : 'Чат с врачом'}
+                {myDoctor ? (
+                  <>
+                    <MessageSquare className="h-5 w-5 text-primary" />
+                    Чат с {myDoctor.name.split(' ')[0]}
+                  </>
+                ) : (
+                  <>
+                    <Bot className="h-5 w-5 text-primary" />
+                    1MED Ассистент
+                  </>
+                )}
               </CardTitle>
+              {!myDoctor && (
+                <p className="text-xs text-muted-foreground mt-1">ИИ-помощник поможет оценить симптомы</p>
+              )}
             </CardHeader>
-            <CardContent className="flex-1 p-0">
-              <ScrollArea className="h-full p-4">
+            <CardContent className="flex-1 p-0 overflow-hidden">
+              <ScrollArea className="h-full p-4" ref={chatScrollRef}>
                 <div className="space-y-4">
-                  {myMessages.length === 0 && (
-                    <div className="text-center text-muted-foreground py-10 text-sm">
-                      Нет сообщений. Начните диалог!
-                    </div>
+                  {/* High Risk Warning */}
+                  {lastHighRisk && (
+                    <Alert variant="destructive" className="mb-4" data-testid="alert-high-risk">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        Ваши симптомы требуют внимания врача. Мы уведомили специалиста.
+                      </AlertDescription>
+                    </Alert>
                   )}
-                  {myMessages.map(msg => (
-                    <div key={msg.id} className={cn(
-                      "flex flex-col max-w-[85%]",
-                      msg.fromId === currentUser.id ? "ml-auto items-end" : "mr-auto items-start"
-                    )}>
-                      <div className={cn(
-                        "px-4 py-2 rounded-2xl text-sm",
-                        msg.fromId === currentUser.id 
-                          ? "bg-primary text-primary-foreground rounded-br-sm" 
-                          : "bg-muted text-foreground rounded-bl-sm"
-                      )}>
-                        {msg.content}
-                      </div>
-                      <span className="text-[10px] text-muted-foreground mt-1">
-                        {new Date(msg.timestamp).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'})}
-                      </span>
-                    </div>
-                  ))}
+                  
+                  {myDoctor ? (
+                    <>
+                      {myMessages.length === 0 && (
+                        <div className="text-center text-muted-foreground py-10 text-sm">
+                          Нет сообщений. Начните диалог!
+                        </div>
+                      )}
+                      {myMessages.map(msg => (
+                        <div key={msg.id} className={cn(
+                          "flex flex-col max-w-[85%]",
+                          msg.fromId === currentUser.id ? "ml-auto items-end" : "mr-auto items-start"
+                        )}>
+                          <div className={cn(
+                            "px-4 py-2 rounded-2xl text-sm",
+                            msg.fromId === currentUser.id 
+                              ? "bg-primary text-primary-foreground rounded-br-sm" 
+                              : "bg-muted text-foreground rounded-bl-sm"
+                          )}>
+                            {msg.content}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground mt-1">
+                            {new Date(msg.timestamp).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'})}
+                          </span>
+                        </div>
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      {agentMessages.length === 0 && (
+                        <div className="text-center text-muted-foreground py-10 text-sm">
+                          <Bot className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          Опишите ваши симптомы, и я помогу определить дальнейшие шаги
+                        </div>
+                      )}
+                      {agentMessages.map(msg => (
+                        <div key={msg.id} className={cn(
+                          "flex flex-col max-w-[85%]",
+                          msg.isUser ? "ml-auto items-end" : "mr-auto items-start"
+                        )}>
+                          {!msg.isUser && msg.severity === 'high_risk' && (
+                            <Badge variant="destructive" className="mb-1 text-xs">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              Требует внимания
+                            </Badge>
+                          )}
+                          <div className={cn(
+                            "px-4 py-2 rounded-2xl text-sm",
+                            msg.isUser 
+                              ? "bg-primary text-primary-foreground rounded-br-sm" 
+                              : msg.severity === 'high_risk'
+                                ? "bg-red-100 text-red-900 border border-red-200 rounded-bl-sm"
+                                : "bg-muted text-foreground rounded-bl-sm"
+                          )}>
+                            {msg.content}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground mt-1">
+                            {msg.timestamp.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'})}
+                          </span>
+                        </div>
+                      ))}
+                      {isAgentTyping && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-sm">Ассистент печатает...</span>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </ScrollArea>
             </CardContent>
             <CardFooter className="p-3 bg-muted/20">
               <form onSubmit={handleSend} className="flex w-full gap-2">
                 <Input 
-                  placeholder="Задайте вопрос..." 
+                  placeholder={myDoctor ? "Задайте вопрос..." : "Опишите симптомы..."}
                   value={msgInput} 
                   onChange={(e) => setMsgInput(e.target.value)}
                   className="bg-white"
+                  disabled={isAgentTyping}
+                  data-testid="input-chat-message"
                 />
-                <Button type="submit" size="icon">
+                <Button type="submit" size="icon" disabled={isAgentTyping} data-testid="button-send-message">
                   <Send className="h-4 w-4" />
                 </Button>
               </form>
