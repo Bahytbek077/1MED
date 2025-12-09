@@ -78,8 +78,12 @@ export async function analyzeSymptoms(text: string): Promise<AgentResponse> {
     const severity: Severity = (hasRedFlags || responseHasRedFlags) ? 'high_risk' : 'low_risk';
 
     return { reply, severity };
-  } catch (error) {
+  } catch (error: any) {
     console.error("OpenAI API error:", error);
+    console.error("Error message:", error?.message);
+    console.error("Error status:", error?.status);
+    console.error("Error code:", error?.code);
+    console.error("Full error:", JSON.stringify(error, null, 2));
     return {
       reply: "Извините, произошла ошибка при обработке вашего сообщения. Пожалуйста, попробуйте позже или обратитесь к врачу напрямую.",
       severity: hasRedFlags ? 'high_risk' : 'low_risk'
