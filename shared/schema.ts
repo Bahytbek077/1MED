@@ -63,6 +63,18 @@ export const messages = pgTable("messages", {
   toId: varchar("to_id", { length: 36 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
   content: text("content").notNull(),
   timestamp: timestamp("timestamp").notNull().defaultNow(),
+  isAgent: integer("is_agent").notNull().default(0),
+  severity: text("severity"),
+});
+
+export const alerts = pgTable("alerts", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 36 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  doctorId: varchar("doctor_id", { length: 36 }).references(() => users.id, { onDelete: 'set null' }),
+  text: text("text").notNull(),
+  severity: text("severity").notNull(),
+  status: text("status").notNull().default('pending'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
@@ -73,6 +85,7 @@ export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
 });
 export const insertStepSchema = createInsertSchema(steps).omit({ id: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, timestamp: true });
+export const insertAlertSchema = createInsertSchema(alerts).omit({ id: true, createdAt: true });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertService = z.infer<typeof insertServiceSchema>;
@@ -80,6 +93,7 @@ export type InsertPlan = z.infer<typeof insertPlanSchema>;
 export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
 export type InsertStep = z.infer<typeof insertStepSchema>;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type InsertAlert = z.infer<typeof insertAlertSchema>;
 
 export type User = typeof users.$inferSelect;
 export type Service = typeof services.$inferSelect;
@@ -87,5 +101,6 @@ export type Plan = typeof plans.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type Step = typeof steps.$inferSelect;
 export type Message = typeof messages.$inferSelect;
+export type Alert = typeof alerts.$inferSelect;
 
 export type SubscriptionWithSteps = Subscription & { route: Step[] };

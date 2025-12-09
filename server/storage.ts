@@ -1,13 +1,14 @@
 import { eq, and, or, desc, asc } from "drizzle-orm";
 import { getDb } from "./db";
 import {
-  users, services, plans, subscriptions, steps, messages,
+  users, services, plans, subscriptions, steps, messages, alerts,
   type User, type InsertUser,
   type Service, type InsertService,
   type Plan, type InsertPlan,
   type Subscription, type InsertSubscription, type SubscriptionWithSteps,
   type Step, type InsertStep,
-  type Message, type InsertMessage
+  type Message, type InsertMessage,
+  type Alert, type InsertAlert
 } from "@shared/schema";
 
 export interface IStorage {
@@ -45,6 +46,12 @@ export interface IStorage {
   getMessages(): Promise<Message[]>;
   getMessagesBetweenUsers(userId1: string, userId2: string): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
+
+  getAlerts(): Promise<Alert[]>;
+  getAlertsByDoctor(doctorId: string): Promise<Alert[]>;
+  getAlertsByUser(userId: string): Promise<Alert[]>;
+  createAlert(alert: InsertAlert): Promise<Alert>;
+  updateAlert(id: string, data: Partial<InsertAlert>): Promise<Alert | undefined>;
 
   seedInitialData(): Promise<void>;
 }
@@ -209,6 +216,32 @@ export class DatabaseStorage implements IStorage {
   async createMessage(message: InsertMessage): Promise<Message> {
     const [newMessage] = await getDb().insert(messages).values(message).returning();
     return newMessage;
+  }
+
+  async getAlerts(): Promise<Alert[]> {
+    return getDb().select().from(alerts).orderBy(desc(alerts.createdAt));
+  }
+
+  async getAlertsByDoctor(doctorId: string): Promise<Alert[]> {
+    return getDb().select().from(alerts)
+      .where(eq(alerts.doctorId, doctorId))
+      .orderBy(desc(alerts.createdAt));
+  }
+
+  async getAlertsByUser(userId: string): Promise<Alert[]> {
+    return getDb().select().from(alerts)
+      .where(eq(alerts.userId, userId))
+      .orderBy(desc(alerts.createdAt));
+  }
+
+  async createAlert(alert: InsertAlert): Promise<Alert> {
+    const [newAlert] = await getDb().insert(alerts).values(alert).returning();
+    return newAlert;
+  }
+
+  async updateAlert(id: string, data: Partial<InsertAlert>): Promise<Alert | undefined> {
+    const [updated] = await getDb().update(alerts).set(data).where(eq(alerts.id, id)).returning();
+    return updated;
   }
 
   async seedInitialData(): Promise<void> {

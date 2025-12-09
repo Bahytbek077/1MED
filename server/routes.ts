@@ -1,9 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertServiceSchema, insertPlanSchema, insertSubscriptionSchema, insertStepSchema, insertMessageSchema } from "@shared/schema";
+import { insertUserSchema, insertServiceSchema, insertPlanSchema, insertSubscriptionSchema, insertStepSchema, insertMessageSchema, insertAlertSchema } from "@shared/schema";
 import { z } from "zod";
 import { isDatabaseAvailable } from "./db";
+import { analyzeSymptoms } from "./agent";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   if (isDatabaseAvailable()) {
@@ -331,6 +332,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: error.errors });
       }
       res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
+  app.post("/api/agent/message", async (req, res) => {
+    try {
+      const { text, userId } = req.body;
+      
+      if (!text || !userId) {
+        return res.status(400).json({ error: "text and userId are required" });
+      }
+
+      const result = await analyzeSymptoms(text);
+      
+      const user = await storage.getUser(userId);
+      const doctorId = user?.doctorId;
+
+      if (result.severity === 'high_risk' && doctorId) {
+        await storage.createAlert({
+          userId,
+          doctorId,
+          text,
+          severity: result.severity,
+          status: 'pending'
+        });
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error("Agent message error:", error);
+      res.status(500).json({ error: "Failed to process message" });
+    }
+  });
+
+  app.post("/api/alert/doctor", async (req, res) => {
+    try {
+      const { userId, text, severity } = req.body;
+      
+      if (!userId || !text || !severity) {
+        return res.status(400).json({ error: "userId, text, and severity are required" });
+      }
+
+      const user = await storage.getUser(userId);
+      const doctorId = user?.doctorId;
+
+      const alert = await storage.createAlert({
+        userId,
+        doctorId: doctorId || null,
+        text,
+        severity,
+        status: 'pending'
+      });
+
+      res.json(alert);
+    } catch (error) {
+      console.error("Alert creation error:", error);
+      res.status(500).json({ error: "Failed to create alert" });
+    }
+  });
+
+  app.get("/api/alerts", async (req, res) => {
+    try {
+      const alerts = await storage.getAlerts();
+      res.json(alerts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch alerts" });
+    }
+  });
+
+  app.get("/api/alerts/doctor/:doctorId", async (req, res) => {
+    try {
+      const alerts = await storage.getAlertsByDoctor(req.params.doctorId);
+      res.json(alerts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch doctor alerts" });
+    }
+  });
+
+  app.patch("/api/alerts/:id", async (req, res) => {
+    try {
+      const alert = await storage.updateAlert(req.params.id, req.body);
+      if (!alert) {
+        return res.status(404).json({ error: "Alert not found" });
+      }
+      res.json(alert);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update alert" });
     }
   });
 
