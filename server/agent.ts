@@ -1,8 +1,17 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let openaiClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiClient) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error("OPENAI_API_KEY не настроен. Добавьте ключ в секреты.");
+    }
+    openaiClient = new OpenAI({ apiKey });
+  }
+  return openaiClient;
+}
 
 const RED_FLAG_KEYWORDS = [
   'сильная боль', 'острая боль', 'невыносимая боль', 'резкая боль',
@@ -53,7 +62,7 @@ export async function analyzeSymptoms(text: string): Promise<AgentResponse> {
 Отвечай на русском языке. Ответ должен быть кратким (2-4 предложения), но информативным.`;
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAIClient().chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
