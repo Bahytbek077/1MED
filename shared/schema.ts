@@ -63,8 +63,6 @@ export const messages = pgTable("messages", {
   toId: varchar("to_id", { length: 36 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
   content: text("content").notNull(),
   timestamp: timestamp("timestamp").notNull().defaultNow(),
-  isAgent: integer("is_agent").notNull().default(0),
-  severity: text("severity"),
 });
 
 export const alerts = pgTable("alerts", {

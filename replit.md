@@ -73,6 +73,29 @@ Preferred communication style: Simple, everyday language.
 - `subscriptions`: Links users to plans with status tracking and doctor notes
 - `steps`: Individual journey steps within subscriptions, including status, type, and scheduling
 - `messages`: Chat messages between patients and doctors with timestamps
+- `alerts`: High-risk symptom alerts sent to doctors (userId, doctorId, text, severity, status)
+
+### AI Agent (1MED Ассистент)
+
+**Features:**
+- GPT-powered symptom analysis via `/api/agent/message` endpoint
+- Accepts patient text complaints and analyzes symptoms
+- Determines severity: `low_risk` or `high_risk`
+- Red flags detection: severe pain, shortness of breath, high fever (>38.5), bleeding, neurological symptoms, cancer-related symptoms
+- Automatically notifies doctor via `/api/alert/doctor` when high_risk detected
+- Does NOT prescribe treatment - only provides recommendations and routing
+
+**API Endpoints:**
+- `POST /api/agent/message` - Input: { text, userId }, Output: { reply, severity }
+- `POST /api/alert/doctor` - Input: { userId, text, severity }, Output: alert object
+- `GET /api/alerts` - Get all alerts
+- `GET /api/alerts/doctor/:doctorId` - Get alerts for specific doctor
+- `PATCH /api/alerts/:id` - Update alert status
+
+**Frontend Integration:**
+- Chat shows 1MED Ассистент when no doctor assigned
+- High-risk responses show red warning badge
+- Alert banner displayed when severe symptoms detected
 
 **Data Flow:**
 - Client-side storage layer (`server/storage.ts`) provides abstraction over database operations
