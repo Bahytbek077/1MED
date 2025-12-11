@@ -7,17 +7,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState, useEffect } from "react";
-import { DollarSign, Users, Activity, Search, TrendingUp, UserMinus, AlertCircle, Loader2 } from "lucide-react";
+import { DollarSign, Users, Activity, Search, TrendingUp, UserMinus, AlertCircle, Loader2, Bell, AlertTriangle, LayoutDashboard, CheckCircle2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 
 export default function AdminDashboard() {
-  const { users, subscriptions, plans, toggleSubscription, updatePlan, messages, loadData, isLoading } = useStore();
+  const { users, subscriptions, plans, toggleSubscription, updatePlan, messages, loadData, isLoading, alerts, updateAlertStatus } = useStore();
   
   useEffect(() => {
     loadData();
   }, []);
   const [search, setSearch] = useState("");
+  
+  const allAlerts = alerts.filter(a => a.status === 'pending');
+  const getPatientName = (userId: string) => users.find(u => u.id === userId)?.name || 'Неизвестный пациент';
+  const getDoctorName = (doctorId: string | null) => {
+    if (!doctorId) return 'Не назначен';
+    return users.find(u => u.id === doctorId)?.name || 'Неизвестный врач';
+  };
 
   const patientSubs = subscriptions.map(sub => ({
     ...sub,
@@ -123,6 +134,54 @@ export default function AdminDashboard() {
              </CardContent>
           </Card>
         </div>
+
+        {allAlerts.length > 0 && (
+          <Card className="border-red-300 bg-red-50/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="h-5 w-5" />
+                Критические уведомления ({allAlerts.length})
+              </CardTitle>
+              <CardDescription>Пациенты с симптомами высокого риска требуют внимания</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="max-h-[300px]">
+                <div className="space-y-3">
+                  {allAlerts.map(alert => (
+                    <div key={alert.id} className="p-4 rounded-lg border border-red-200 bg-white" data-testid={`admin-alert-${alert.id}`}>
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="destructive" className="uppercase text-xs">
+                              {alert.severity === 'high_risk' ? 'Высокий риск' : alert.severity}
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">
+                              {alert.createdAt && format(new Date(alert.createdAt), "d MMM yyyy, HH:mm", { locale: ru })}
+                            </span>
+                          </div>
+                          <div className="flex gap-4 text-sm mb-2">
+                            <span><strong>Пациент:</strong> {getPatientName(alert.userId)}</span>
+                            <span><strong>Врач:</strong> {getDoctorName(alert.doctorId)}</span>
+                          </div>
+                          <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded border">{alert.text}</p>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => updateAlertStatus(alert.id, 'reviewed')}
+                          data-testid={`admin-alert-resolve-${alert.id}`}
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Закрыть
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Chart: Active Subs per Plan */}
