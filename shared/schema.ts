@@ -59,8 +59,8 @@ export const steps = pgTable("steps", {
 
 export const messages = pgTable("messages", {
   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
-  fromId: varchar("from_id", { length: 36 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
-  toId: varchar("to_id", { length: 36 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  fromId: varchar("from_id", { length: 36 }).notNull(),
+  toId: varchar("to_id", { length: 36 }).notNull(),
   content: text("content").notNull(),
   timestamp: timestamp("timestamp").notNull().defaultNow(),
 });
