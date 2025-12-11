@@ -1,4 +1,4 @@
-import { useStore, type User, type Subscription } from "@/lib/store";
+import { useStore, type User, type Subscription, type Alert } from "@/lib/store";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,9 @@ import {
   UserCog,
   Save,
   FileText,
-  Loader2
+  Loader2,
+  Bell,
+  AlertTriangle
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -30,7 +32,7 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
 export default function DoctorDashboard() {
-  const { users, subscriptions, plans, services, updateStepStatus, addStep, removeStep, messages, sendMessage, currentUser, updateUser, updateStepDate, updateSubscriptionNotes, loadData, isLoading } = useStore();
+  const { users, subscriptions, plans, services, updateStepStatus, addStep, removeStep, messages, sendMessage, currentUser, updateUser, updateStepDate, updateSubscriptionNotes, loadData, isLoading, alerts, updateAlertStatus } = useStore();
   
   useEffect(() => {
     loadData();
@@ -58,6 +60,9 @@ export default function DoctorDashboard() {
 
   const myPatientIds = users.filter(u => u.role === 'patient' && u.doctorId === currentUser?.id).map(u => u.id);
   const activeSubs = subscriptions.filter(s => s.status === 'active' && myPatientIds.includes(s.userId));
+  
+  const myAlerts = alerts.filter(a => a.doctorId === currentUser?.id && a.status === 'pending');
+  const getPatientName = (userId: string) => users.find(u => u.id === userId)?.name || 'Неизвестный пациент';
 
   const getPlanName = (id: string) => plans.find(p => p.id === id)?.name || 'Неизвестно';
 
@@ -139,6 +144,15 @@ export default function DoctorDashboard() {
             <TabsTrigger value="patients" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Пациенты
+            </TabsTrigger>
+            <TabsTrigger value="alerts" className="flex items-center gap-2 relative">
+              <Bell className="h-4 w-4" />
+              Уведомления
+              {myAlerts.length > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                  {myAlerts.length}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <UserCog className="h-4 w-4" />
@@ -390,6 +404,56 @@ export default function DoctorDashboard() {
               )}
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="alerts" className="flex-1 mt-0 overflow-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="h-5 w-5" />
+                Критические уведомления
+              </CardTitle>
+              <CardDescription>Пациенты с симптомами высокого риска требуют вашего внимания</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {myAlerts.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Bell className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                  <p>Нет активных критических уведомлений</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {myAlerts.map(alert => (
+                    <div key={alert.id} className="p-4 rounded-lg border border-red-200 bg-red-50" data-testid={`alert-card-${alert.id}`}>
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="destructive" className="uppercase text-xs">
+                              {alert.severity === 'high_risk' ? 'Высокий риск' : alert.severity}
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">
+                              {alert.createdAt && format(new Date(alert.createdAt), "d MMM yyyy, HH:mm", { locale: ru })}
+                            </span>
+                          </div>
+                          <p className="font-medium mb-1">{getPatientName(alert.userId)}</p>
+                          <p className="text-sm text-gray-700 bg-white p-2 rounded border">{alert.text}</p>
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => updateAlertStatus(alert.id, 'reviewed')}
+                          data-testid={`alert-resolve-${alert.id}`}
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Рассмотрено
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="profile" className="flex-1 mt-0">

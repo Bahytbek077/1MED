@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { api, type SubscriptionWithSteps, type Role, type ServiceType } from './api';
-import type { User, Service, Plan, Message, Step } from '@shared/schema';
+import type { User, Service, Plan, Message, Step, Alert } from '@shared/schema';
 
-export type { Role, ServiceType, User, Service, Plan, Message, Step, SubscriptionWithSteps };
+export type { Role, ServiceType, User, Service, Plan, Message, Step, SubscriptionWithSteps, Alert };
 export type Subscription = SubscriptionWithSteps;
 
 interface StoreState {
@@ -13,9 +13,12 @@ interface StoreState {
   services: Service[];
   subscriptions: SubscriptionWithSteps[];
   messages: Message[];
+  alerts: Alert[];
   isLoading: boolean;
   
   loadData: () => Promise<void>;
+  loadAlerts: () => Promise<void>;
+  updateAlertStatus: (id: string, status: string) => Promise<void>;
   
   login: (email: string, password?: string) => Promise<boolean>;
   logout: () => void;
@@ -52,22 +55,45 @@ export const useStore = create<StoreState>()(
       services: [],
       subscriptions: [],
       messages: [],
+      alerts: [],
       isLoading: false,
 
       loadData: async () => {
         set({ isLoading: true });
         try {
-          const [users, plans, services, subscriptions, messages] = await Promise.all([
+          const [users, plans, services, subscriptions, messages, alerts] = await Promise.all([
             api.users.getAll(),
             api.plans.getAll(),
             api.services.getAll(),
             api.subscriptions.getAll(),
             api.messages.getAll(),
+            api.alerts.getAll(),
           ]);
-          set({ users, plans, services, subscriptions, messages, isLoading: false });
+          set({ users, plans, services, subscriptions, messages, alerts, isLoading: false });
         } catch (error) {
           console.error('Failed to load data:', error);
           set({ isLoading: false });
+        }
+      },
+
+      loadAlerts: async () => {
+        try {
+          const alerts = await api.alerts.getAll();
+          set({ alerts });
+        } catch (error) {
+          console.error('Failed to load alerts:', error);
+        }
+      },
+
+      updateAlertStatus: async (id, status) => {
+        try {
+          await api.alerts.update(id, { status });
+          set(state => ({
+            alerts: state.alerts.map(a => a.id === id ? { ...a, status } : a)
+          }));
+        } catch (error) {
+          console.error('Failed to update alert:', error);
+          throw error;
         }
       },
 

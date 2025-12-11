@@ -1,4 +1,4 @@
-import type { User, Service, Plan, Message, Step } from "@shared/schema";
+import type { User, Service, Plan, Message, Step, Alert } from "@shared/schema";
 
 export type Role = 'patient' | 'doctor' | 'admin';
 export type ServiceType = 'consultation' | 'test' | 'specialist';
@@ -144,6 +144,16 @@ export const api = {
     send: (data: { fromId: string; toId: string; content: string }) =>
       fetchJson<Message>(`${API_BASE}/messages`, {
         method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  },
+
+  alerts: {
+    getAll: () => fetchJson<Alert[]>(`${API_BASE}/alerts`),
+    getByDoctor: (doctorId: string) => fetchJson<Alert[]>(`${API_BASE}/alerts/doctor/${doctorId}`),
+    update: (id: string, data: Partial<Alert>) =>
+      fetchJson<Alert>(`${API_BASE}/alerts/${id}`, {
+        method: 'PATCH',
         body: JSON.stringify(data),
       }),
   },
