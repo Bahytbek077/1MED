@@ -38,21 +38,29 @@ export default function PatientDashboard() {
 
   const [msgInput, setMsgInput] = useState("");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([]);
   const [isAgentTyping, setIsAgentTyping] = useState(false);
   const [lastHighRisk, setLastHighRisk] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
+  const agentMessages: AgentMessage[] = messages
+    .filter(m => 
+      (m.fromId === currentUser?.id && m.toId === 'agent') || 
+      (m.toId === currentUser?.id && m.fromId === 'agent')
+    )
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+    .map(m => ({
+      id: m.id,
+      content: m.content,
+      isUser: m.fromId === currentUser?.id,
+      severity: (m as any).severity,
+      timestamp: new Date(m.timestamp)
+    }));
+
   const sendToAgent = async (text: string) => {
     if (!text.trim() || !currentUser) return;
     
-    const userMsg: AgentMessage = {
-      id: Date.now().toString(),
-      content: text,
-      isUser: true,
-      timestamp: new Date()
-    };
-    setAgentMessages(prev => [...prev, userMsg]);
+    await sendMessage(currentUser.id, 'agent', text);
+    
     setIsAgentTyping(true);
     setLastHighRisk(false);
 
@@ -65,26 +73,32 @@ export default function PatientDashboard() {
       
       const data = await response.json();
       
-      const agentReply: AgentMessage = {
-        id: (Date.now() + 1).toString(),
-        content: data.reply,
-        isUser: false,
-        severity: data.severity,
-        timestamp: new Date()
-      };
-      setAgentMessages(prev => [...prev, agentReply]);
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromId: 'agent',
+          toId: currentUser.id,
+          content: data.reply
+        })
+      });
+      
+      await loadData();
       
       if (data.severity === 'high_risk') {
         setLastHighRisk(true);
       }
     } catch (error) {
-      const errorMsg: AgentMessage = {
-        id: (Date.now() + 1).toString(),
-        content: 'Извините, произошла ошибка. Попробуйте позже.',
-        isUser: false,
-        timestamp: new Date()
-      };
-      setAgentMessages(prev => [...prev, errorMsg]);
+      await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromId: 'agent',
+          toId: currentUser.id,
+          content: 'Извините, произошла ошибка. Попробуйте позже.'
+        })
+      });
+      await loadData();
     } finally {
       setIsAgentTyping(false);
     }
@@ -94,7 +108,7 @@ export default function PatientDashboard() {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
-  }, [agentMessages, isAgentTyping]);
+  }, [messages, isAgentTyping]);
 
   if (!currentUser) return null;
   
